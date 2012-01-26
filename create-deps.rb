@@ -6,17 +6,19 @@
 # Creates the dependency file for AliRoot versions. The following environment
 # variables are needed:
 #
-# AF_DEP_URL  : HTTP URL containing the list of AliEn packages for ALICE
-# AF_DEP_FILE : destination file on the local filesystem
+# AF_DEP_URL  => HTTP URL containing the list of AliEn packages for ALICE
+# AF_DEP_FILE => destination file on the local filesystem
+# AF_PACK_DIR => local AliEn Packman repository
 #
 
 require 'net/http'
 require 'pp'
+require 'optparse'
 
-def get_ali_packages(url)
+def get_ali_packages(url, pack_dir)
 
   if (url.kind_of?(URI::HTTP) === false)
-    raise Exception.new('Invalid URL: only http URLs are supported')
+    raise URI::InvalidURIError.new('Invalid URL: only http URLs are supported')
   end
 
   packages = []
@@ -52,7 +54,13 @@ def get_ali_packages(url)
         end
         next unless (dep_root && dep_geant3)
 
-        # Assemble package
+        # Check if package is installed
+        if (pack_dir &&
+          !File.exists?("#{pack_dir}/VO_ALICE/AliRoot/#{ary[2]}/#{ary[2]}"))
+          next
+        end
+
+        # Push package hash
         packages << {
           :aliroot => ary[4],
           :root    => dep_root,
@@ -84,8 +92,46 @@ def main
     exit 3
   end
 
+  if ((pack_dir = ENV['AF_PACK_DIR']) == nil)
+    warn 'Environment variable AF_PACK_DIR should be set to a local directory'
+    exit 3
+  end
+
+  # Options
+  opts = {
+    :checkexists => true,
+  }
+
+  # Define and parse options
+  OptionParser.new do |op|
+
+    op.on('-h', '--help', 'shows usage') do
+      puts op
+      exit 4
+    end
+
+    op.on('-c', '--[no-]check-exists',
+      "include only installed packages (default: #{opts[:checkexists]})") do |v|
+      opts[:checkexists] = v
+    end
+
+    # Custom banner
+    prog = File.basename($0)
+    op.banner = "#{prog} -- by Dario Berzano <dario.berzano@cern.ch>\n" +
+      "Creates a dependency file for AliRoot packages\n\n" +
+      "Usage: #{prog} [options]"
+
+    begin
+      op.parse!
+    rescue OptionParser::ParseError => e
+      warn "#{prog}: arguments error: #{e.message}"
+      exit 5
+    end
+
+  end
+
   begin
-    packages = get_ali_packages(dep_url)
+    packages = get_ali_packages(dep_url, opts[:checkexists] ? pack_dir : nil)
 
     begin
 
