@@ -1,0 +1,239 @@
+#!/bin/bash
+#
+# /etc/init.d/xproofd - Start/stop PROOF
+#
+# The following two lines allow this script to be managed by Fedora's
+# chkconfig program.
+#
+# chkconfig: - 80 30
+# description: PROOF is the Parallel ROOT Facility.
+
+export COMMAND="$1"
+
+# Source AF environment
+source /etc/aafrc
+
+# Set up environment for ROOT version used for PROOF
+export ROOTSYS="$AF_ROOT_PROOF"
+
+# Get Xrootd libraries from inside AliEn
+export XRDAPI="$AF_ALIEN_DIR/api"
+
+# PROOF workdir
+export XPREF="$AF_PREFIX"/var/proof
+
+# General exports for AAF compatibility
+#export ALICE_PROOF_AAF_PROOF_DIR="$XPREF"
+#export ALICE_PROOF_AAF_XROOTD_REDIRECTOR="$(hostname -f)"
+
+# Guess binary for xproofd
+export XPDBIN="$ROOTSYS"/bin/xproofd
+
+# After this timeout (in seconds), send SIGKILL
+export STOPTIMEOUT=10
+
+# PROOF user
+export PROOFUSER=$AF_USER
+
+# PROOF configuration
+export XCONF="$AF_PREFIX/etc/proof/prf-main.cf"
+
+# PROOF logs
+export XLOG="$AF_PREFIX/var/log/proof.log"
+
+# Libraries and paths
+export LD_LIBRARY_PATH="$ROOTSYS/lib:$XRDAPI/lib:$LD_LIBRARY_PATH"
+export PATH="$ROOTSYS/bin:$XRDAPI/bin:$PATH"
+
+if [ ! -d "$XPREF" ]; then
+  echo "Can't find PROOF working directory"
+  exit 21
+fi
+
+if [ ! -e "$XPDBIN" ]; then
+  echo "Can't guess xproofd path, aborting"
+  exit 22
+fi
+
+if [ $(whoami) != "root" ]; then
+  echo "You must be root to run this script, aborting"
+  exit 42
+fi
+
+# Gets xproofd pid (or nothing)
+function xpdpid() {
+  ps -e -o pid,command | grep "$XCONF" | grep "$XLOG" | \
+    grep -v grep | awk '{print $1}'
+}
+
+# Creates skeleton for PROOF
+function xpdskel() {
+
+  # Log directory
+  local XLOGDIR=$(dirname "$XLOG")
+  mkdir -p "$XLOGDIR" 2> /dev/null
+  if [ $? != 0 ]; then
+    echo "Can't create log directory $XLOGDIR"
+    return 1
+  fi
+  chown -R $PROOFUSER "$XLOGDIR"
+  chmod -R 0755 "$XLOGDIR"
+
+  # Sockets (admin) directory
+  local XADM="$XPREF/admin"
+  mkdir -p "$XADM" 2> /dev/null
+  if [ $? != 0 ]; then
+    echo "Can't create admin directory $XADM"
+    return 1
+  fi
+  chown root:root "$XADM"
+  chmod 1777 "$XADM"
+
+  # Datasets directory
+  local XDS="$XPREF/datasets"
+  mkdir -p "$XDS" 2> /dev/null
+  if [ $? != 0 ]; then
+    echo "Can't create datasets directory $XDS"
+    return 1
+  fi
+  chown root:root "$XDS"
+  chmod 1777 "$XDS"
+
+  # Working directory
+  local XWD="$XPREF/proofbox"
+  mkdir -p "$XWD" 2> /dev/null
+  if [ $? != 0 ]; then
+    echo "Can't create working directory $XWD"
+    return 1
+  fi
+  chown root:root "$XWD"
+  chmod 0755 "$XWD"
+
+  # Global packages directory
+  #local XPKG="$XPREF/packages"
+  #mkdir -p "$XPKG" 2> /dev/null
+  #if [ $? != 0 ]; then
+  #  echo "Can't create global packages directory $XPKG"
+  #  return 1
+  #fi
+  #chown -R $PROOFUSER "$XPKG"
+  #chmod -R 0755 "$XPKG"
+
+}
+
+# Kills stale PROOF workers
+function xpdkillwrk() {
+  killall -KILL proofserv.exe > /dev/null 2>&1
+}
+
+# Prints xproofd status (running or not)
+function xpdstatus() {
+  local PID=$(xpdpid)
+  if [ "$PID" != "" ]; then
+    echo "PROOF (xproofd) is running with PID $PID"
+    return 0
+  else
+    echo "PROOF (xproofd) is not running"
+    return 1
+  fi
+}
+
+# Start xproofd (if not started yet)
+function xpdstart() {
+
+  local PID=$(xpdpid)
+  if [ "$PID" == "" ]; then
+
+    # Creates directory skeleton
+    xpdskel
+    if [ $? != 0 ]; then
+      echo "Can't prepare xproofd startup"
+      return 1
+    fi
+
+    # Kills all the stale PROOF workers
+    xpdkillwrk
+
+    "$XPDBIN" -b -c "$XCONF" -l "$XLOG" -R $PROOFUSER
+
+    sleep 2
+    PID=$(xpdpid)
+    if [ "$PID" == "" ]; then
+      echo "Starting of xproofd failed"
+      return 1
+    else
+      echo "xproofd started with PID $PID"
+    fi
+  else
+    echo "Not starting: xproofd already running with PID $PID"
+  fi
+  return 0
+}
+
+# Stop xproofd (DON'T EVER USE Stopxpd!!!)
+function xpdstop() {
+  local PID=$(xpdpid)
+  local TERMINATED=0
+  local I
+
+  # Check if PROOF is running
+  if [ "$PID" == "" ]; then
+    echo "Not stopping: xproofd not running"
+  else
+    echo -n "Stopping xproofd (wait max ${STOPTIMEOUT}s)..."
+    kill -15 $PID
+    for ((I=0; $I<$STOPTIMEOUT; I++)); do
+      kill -0 $PID 2> /dev/null
+      if [ $? != 0 ]; then
+        TERMINATED=1
+        echo "gently stopped"
+        break
+      else
+        echo -n "."
+        sleep 1
+      fi
+    done
+    if [ $TERMINATED == 0 ]; then
+      kill -9 $PID 2> /dev/null
+      echo "forced termination"
+    fi
+  fi
+
+  # Kills proofserv.exe
+  echo -n "Purging stale PROOF workers..."
+  xpdkillwrk
+  echo "done"
+
+  return 0
+}
+
+#
+# Entry point
+#
+
+shift
+
+case "$COMMAND" in
+
+  start)
+    xpdstart
+  ;;
+
+  stop)
+    xpdstop
+  ;;
+
+  status)
+    xpdstatus
+  ;;
+
+  reload|restart)
+    xpdstop
+    xpdstart
+  ;;
+
+  *)
+    echo "Usage: $0 {start|stop|status|restart}"
+  ;;
+
+esac
