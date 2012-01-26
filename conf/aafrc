@@ -1,0 +1,24 @@
+# Directory of AliEn
+export AF_ALIEN_DIR='/opt/exp_software/alice/alien'
+
+# Directory of AliEn packages
+export AF_PACK_DIR='/opt/exp_software/alice/packages'
+
+# Dependency file and URL
+export AF_DEP_FILE='/opt/aaf/var/deps.txt'
+export AF_DEP_URL='http://alienbuild.cern.ch:8889/tarballs/Packages'
+
+# Extra software (no packages) prefix
+export AF_PREFIX='/opt/aaf'
+
+# The PROOF master node
+export AF_MASTER='pmaster.to.infn.it'
+
+# Unprivileged administrative user
+export AF_USER=sgmalice001
+
+# ROOT directory of current PROOF version
+export AF_ROOT_PROOF=`readlink $AF_PREFIX/var/proof/root_current`
+
+# Directory exported via internal PROOF's Xrootd
+export AF_PROOF_EXPORT="$AF_PREFIX/var/proof/export"
