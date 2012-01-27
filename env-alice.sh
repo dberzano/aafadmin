@@ -15,12 +15,17 @@ if [ "$BASH_SOURCE" == "$0" ]; then
 fi
 
 #
+# Load AF configuration
+#
+
+source /etc/aafrc || return 1
+
+#
 # Requirements
 #
 
 if [ ! -r "$AF_DEP_FILE" ]; then
   echo 'Can not read dependency file, check AF_DEP_FILE variable' >&2
-  CleanUp
   return 1
 fi
 
