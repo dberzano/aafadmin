@@ -11,6 +11,8 @@
 ErrMkdir=1
 ErrMissingRc=2
 ErrCp=3
+ErrRootVer=4
+ErrRootSymlink=5
 
 # Directories to create
 Skel=(
@@ -32,6 +34,9 @@ FilesBin=(
 FilesEtcProof=(
   'conf/prf-main.tmpl'
   'conf/proof.conf'
+  'conf/XrdSecgsiGMAPFunLDAP.cf'
+  'conf/grid-mapfile'
+  'conf/groups.alice.cf'
 )
 
 # Files to copy in etc/proof (don't overwrite)
@@ -47,7 +52,9 @@ function Copy {
   [ "$1" == '-o' ] && Keep=0 || Keep=1
   shift 2
 
-  echo "Copying files in $Dest (overwrite):"
+  echo -n "Copying files in $Dest "
+  [ "$Keep" == 1 ] && echo "(won't overwrite):" || echo "(overwrite):"
+
   while [ $# -gt 0 ] ; do
     File="$AF_PREFIX/$Dest/`basename "$1"`"
 
@@ -83,9 +90,10 @@ function Main {
   local Prog=$(basename "$BASH_SOURCE")
   local Args
   local Keep='-k'
+  local RootPath=''
 
-  Args=$(getopt -o 'o' --long 'overwrite' -n"$Prog" -- "$@")
-  [ $? == 0 ] || return ErrArgs
+  Args=$(getopt -o 'or:' --long 'overwrite,root:' -n"$Prog" -- "$@")
+  [ $? == 0 ] || return $ErrArgs
 
   eval set -- "$Args"
 
@@ -96,6 +104,11 @@ function Main {
       --overwrite|-o)
         Keep='-o'
         shift
+      ;;
+
+      --root|-r)
+        RootPath="$2"
+        shift 2
       ;;
 
       *)
@@ -135,6 +148,18 @@ function Main {
   Copy -o    'bin' "${FilesBin[@]}" || exit $?
   Copy $Keep 'etc/proof' "${FilesEtcProof[@]}" || exit $?
   Copy -o    'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
+
+  # Link ROOT version
+  local RootSymlink="$AF_PREFIX/var/proof/root_current"
+  if [ ! -L "$RootSymlink" ]; then
+    if [ ! -d "$RootPath" ]; then
+      echo "You need to specify the full path to PROOF's ROOT version with --root"
+      exit $ErrRootVer
+    else
+      echo "Symlinking ROOT version to $RootSymlink:"
+      ln -nfsv "$RootPath" "$RootSymlink" || exit $ErrRootSymlink
+    fi
+  fi
 
 }
 
