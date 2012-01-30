@@ -110,14 +110,23 @@ function xpdskel() {
   chmod 0755 "$XWD"
 
   # Global packages directory
-  #local XPKG="$XPREF/packages"
-  #mkdir -p "$XPKG" 2> /dev/null
-  #if [ $? != 0 ]; then
-  #  echo "Can't create global packages directory $XPKG"
-  #  return 1
-  #fi
-  #chown -R $PROOFUSER "$XPKG"
-  #chmod -R 0755 "$XPKG"
+  local XPKG="$XPREF/proofbox/$PROOFUSER/packages"
+  mkdir -p "$XPKG" 2> /dev/null
+  if [ $? != 0 ]; then
+    echo "Can't create global packages directory $XPKG"
+    return 1
+  fi
+  chown -R $PROOFUSER "$XPKG"
+  chmod -R 0755 "$XPKG"
+
+  # PROOF directory to export via internal xrootd
+  mkdir -p "$AF_PROOF_EXPORT" 2> /dev/null
+  if [ $? != 0 ]; then
+    echo "Can't create PROOF exported directory $AF_PROOF_EXPORT"
+    return 1
+  fi
+  chown -R $PROOFUSER "$AF_PROOF_EXPORT"
+  chmod -R 0755 "$AF_PROOF_EXPORT"
 
 }
 

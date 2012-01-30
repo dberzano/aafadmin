@@ -79,6 +79,37 @@ function Main {
   # Run from installer's directory
   cd `dirname "$0"`
 
+  # Parse command line options
+  local Prog=$(basename "$BASH_SOURCE")
+  local Args
+  local Keep='-k'
+
+  Args=$(getopt -o 'o' --long 'overwrite' -n"$Prog" -- "$@")
+  [ $? == 0 ] || return ErrArgs
+
+  eval set -- "$Args"
+
+  while [ "$1" != "--" ] ; do
+
+    case "$1" in
+
+      --overwrite|-o)
+        Keep='-o'
+        shift
+      ;;
+
+      *)
+        # Should never happen
+        echo "Skipping unknown option: $1"
+        shift 1
+      ;;
+
+    esac
+
+  done
+
+  shift # --
+
   # Try to create the destination directory
   mkdir -p "$AF_PREFIX"
   if [ $? != 0 ]; then
@@ -101,9 +132,9 @@ function Main {
   echo ''
 
   # Install files (-o: overwrite, -k: keep)
-  Copy -o 'bin' "${FilesBin[@]}" || exit $?
-  Copy -k 'etc/proof' "${FilesEtcProof[@]}" || exit $?
-  Copy -o 'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
+  Copy -o    'bin' "${FilesBin[@]}" || exit $?
+  Copy $Keep 'etc/proof' "${FilesEtcProof[@]}" || exit $?
+  Copy -o    'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
 
 }
 
