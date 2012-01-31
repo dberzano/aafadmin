@@ -28,12 +28,13 @@ Skel=(
 FilesBin=(
   'create-deps.rb'
   'gen-proof-cfg.sh'
+  'push-puppet.sh'
+  'add-remove-proof-node.sh'
 )
 
 # Files to copy in etc/proof (don't overwrite)
 FilesEtcProof=(
   'conf/prf-main.tmpl'
-  'conf/proof.conf'
   'conf/XrdSecgsiGMAPFunLDAP.cf'
   'conf/grid-mapfile'
   'conf/groups.alice.cf'
@@ -128,7 +129,7 @@ function Main {
   if [ $? != 0 ]; then
     echo "Can not create directory $AF_PREFIX: as root, do:"
     echo "  mkdir -p '$AF_PREFIX'"
-    echo "  chown $AF_USER '$AF_PREFIX'"
+    echo "  chown $AF_USER:$AF_GROUP '$AF_PREFIX'"
     return $ErrMkdir
   fi
 
@@ -148,6 +149,18 @@ function Main {
   Copy -o    'bin' "${FilesBin[@]}" || exit $?
   Copy $Keep 'etc/proof' "${FilesEtcProof[@]}" || exit $?
   Copy -o    'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
+
+  # Generates configuration using the installed utility
+  echo 'Invoking utility to generate PROOF configuration from template:'
+  "$AF_PREFIX/bin/gen-proof-cfg.sh" || exit $?
+
+  # proof.conf file is generated with current hostname as master only
+  if [ ! -e "$AF_PREFIX/etc/proof/proof.conf" ] || [ "$Keep" == '-o' ]; then
+    echo 'Generating proof.conf with current master name'
+    echo '# Do not mess with this file: it is automatically generated' \
+      > "$AF_PREFIX/etc/proof/proof.conf"
+    echo "master `hostname -f`" >> "$AF_PREFIX/etc/proof/proof.conf"
+  fi
 
   # Link ROOT version
   local RootSymlink="$AF_PREFIX/var/proof/root_current"
