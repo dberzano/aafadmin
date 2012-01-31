@@ -14,11 +14,17 @@ export AF_PREFIX='/opt/aaf'
 # The PROOF master node
 export AF_MASTER='pmaster.to.infn.it'
 
-# Unprivileged administrative user
-export AF_USER=sgmalice001
+# Unprivileged administrative user and group
+export AF_USER=sysman
+export AF_GROUP=`groups | awk '{ print $1 }'`
 
 # ROOT directory of current PROOF version
 export AF_ROOT_PROOF=`readlink $AF_PREFIX/var/proof/root_current`
 
 # Directory exported via internal PROOF's Xrootd
 export AF_PROOF_EXPORT="$AF_PREFIX/var/proof/export"
+
+# Destination of the files to be deployed to each machine (with Puppet or
+# whatever you want). It is a rsync destination: it might or may not include
+# a host name
+export AF_DEPLOY_DEST='root@t2-se-00.to.infn.it:/etc/puppet/modules/alice-proof-slave/files'
