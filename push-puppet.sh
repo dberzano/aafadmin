@@ -20,7 +20,7 @@ Files=(
 # Main function
 function Main() {
 
-  local List
+  local TmpDir
 
   # Source environment variables
   source /etc/aafrc 2> /dev/null
@@ -29,18 +29,25 @@ function Main() {
     exit 1
   fi
 
-  # Prepares a file list
-  List=`mktemp /tmp/push-puppet-XXXX`
+  # Temporary directory for configuration
+  TmpDir=`mktemp -d /tmp/push-puppet-XXXX`
 
+  # Stage needed files into temporary directory
+  echo 'Staging needed files into a temporary directory:' >&2
   for F in "${Files[@]}" ; do
-    echo "$F" >> $List
+    mkdir -p `dirname "$TmpDir/$F"`
+    cp -pv "$AF_PREFIX/$F" "$TmpDir/$F"
   done
 
-  # Rsync only those files to destination
-  rsync -a --files-from=$List "$AF_PREFIX"/ "$AF_DEPLOY_DEST"
+  # Add global configuration file there
+  cp -pv /etc/aafrc "$TmpDir/etc/"
 
-  # Clean up
-  rm -f $List
+  # Send files to remote host via rsync
+  echo 'Sending files via rsync:' >&2
+  rsync -vrlt --delete "$TmpDir/" "$AF_DEPLOY_DEST"
+
+  # Clean up
+  rm -rf "$TmpDir"
 
 }
 
