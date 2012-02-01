@@ -17,11 +17,10 @@ ErrRootSymlink=5
 # Directories to create
 Skel=(
   'bin'
-  'var/proof'
-  'var/log'
+#  'var/proof'
+#  'var/log'
   'etc/proof'
   'etc/init.d'
-  'etc/grid-security'
 )
 
 # Files to copy in bin
@@ -107,10 +106,10 @@ function Main {
         shift
       ;;
 
-      --root|-r)
-        RootPath="$2"
-        shift 2
-      ;;
+      #--root|-r)
+      #  RootPath="$2"
+      #  shift 2
+      #;;
 
       *)
         # Should never happen
@@ -163,16 +162,16 @@ function Main {
   fi
 
   # Link ROOT version
-  local RootSymlink="$AF_PREFIX/var/proof/root_current"
-  if [ ! -L "$RootSymlink" ]; then
-    if [ ! -d "$RootPath" ]; then
-      echo "You need to specify the full path to PROOF's ROOT version with --root"
-      exit $ErrRootVer
-    else
-      echo "Symlinking ROOT version to $RootSymlink:"
-      ln -nfsv "$RootPath" "$RootSymlink" || exit $ErrRootSymlink
-    fi
-  fi
+  #local RootSymlink="$AF_PREFIX/var/proof/root_current"
+  #if [ ! -L "$RootSymlink" ]; then
+  #  if [ ! -d "$RootPath" ]; then
+  #    echo "You need to specify the full path to PROOF's ROOT version with --root"
+  #    exit $ErrRootVer
+  #  else
+  #    echo "Symlinking ROOT version to $RootSymlink:"
+  #    ln -nfsv "$RootPath" "$RootSymlink" || exit $ErrRootSymlink
+  #  fi
+  #fi
 
 }
 
