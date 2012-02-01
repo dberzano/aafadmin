@@ -32,30 +32,26 @@ export XPDBIN="$ROOTSYS"/bin/xproofd
 # After this timeout (in seconds), send SIGKILL
 export STOPTIMEOUT=10
 
-# PROOF user
-export PROOFUSER=$AF_USER
-
 # PROOF configuration
 export XCONF="$AF_PREFIX/etc/proof/prf-main.cf"
 
-# PROOF logs
+# PROOF log file
 export XLOG="$AF_PREFIX/var/log/proof.log"
+
+# PROOF working directory
+export XPREF="$AF_PREFIX/var/proof"
 
 # Libraries and paths
 export LD_LIBRARY_PATH="$ROOTSYS/lib:$XRDAPI/lib:$LD_LIBRARY_PATH"
 export PATH="$ROOTSYS/bin:$XRDAPI/bin:$PATH"
 
-if [ ! -d "$XPREF" ]; then
-  echo "Can't find PROOF working directory"
-  exit 21
-fi
-
+# No binary, no party
 if [ ! -e "$XPDBIN" ]; then
   echo "Can't guess xproofd path, aborting"
   exit 22
 fi
 
-if [ $(whoami) != "root" ]; then
+if [ `whoami` != "root" ]; then
   echo "You must be root to run this script, aborting"
   exit 42
 fi
@@ -69,6 +65,15 @@ function xpdpid() {
 # Creates skeleton for PROOF
 function xpdskel() {
 
+  # PROOF working directory
+  mkdir -p "$XPREF" 2> /dev/null
+  if [ $? != 0 ]; then
+    echo "Can't create working directory $XPREF"
+    return 1
+  fi
+  chown -R $AF_USER:$AF_GROUP "$XPREF"
+  chmod -R 0755 "$XPREF"
+
   # Log directory
   local XLOGDIR=$(dirname "$XLOG")
   mkdir -p "$XLOGDIR" 2> /dev/null
@@ -76,8 +81,8 @@ function xpdskel() {
     echo "Can't create log directory $XLOGDIR"
     return 1
   fi
-  chown -R $PROOFUSER "$XLOGDIR"
-  chmod -R 0755 "$XLOGDIR"
+  chown -R $AF_USER:$AF_GROUP "$XLOGDIR"
+  chmod 1775 "$XLOGDIR"
 
   # Sockets (admin) directory
   local XADM="$XPREF/admin"
@@ -99,7 +104,7 @@ function xpdskel() {
   chown root:root "$XDS"
   chmod 1777 "$XDS"
 
-  # Working directory
+  # The "proofbox" directory (under the working directory)
   local XWD="$XPREF/proofbox"
   mkdir -p "$XWD" 2> /dev/null
   if [ $? != 0 ]; then
@@ -110,13 +115,13 @@ function xpdskel() {
   chmod 0755 "$XWD"
 
   # Global packages directory
-  local XPKG="$XPREF/proofbox/$PROOFUSER/packages"
+  local XPKG="$XPREF/proofbox/$AF_USER/packages"
   mkdir -p "$XPKG" 2> /dev/null
   if [ $? != 0 ]; then
     echo "Can't create global packages directory $XPKG"
     return 1
   fi
-  chown -R $PROOFUSER "$XPKG"
+  chown -R $AF_USER:$AF_GROUP "$XPKG"
   chmod -R 0755 "$XPKG"
 
   # PROOF directory to export via internal xrootd
@@ -125,7 +130,7 @@ function xpdskel() {
     echo "Can't create PROOF exported directory $AF_PROOF_EXPORT"
     return 1
   fi
-  chown -R $PROOFUSER "$AF_PROOF_EXPORT"
+  chown -R $AF_USER:$AF_GROUP "$AF_PROOF_EXPORT"
   chmod -R 0755 "$AF_PROOF_EXPORT"
 
 }
@@ -163,7 +168,8 @@ function xpdstart() {
     # Kills all the stale PROOF workers
     xpdkillwrk
 
-    "$XPDBIN" -b -c "$XCONF" -l "$XLOG" -R $PROOFUSER
+    echo 'Starting PROOF (xproofd), hang on...'
+    "$XPDBIN" -b -c "$XCONF" -l "$XLOG" -R $AF_USER
 
     sleep 2
     PID=$(xpdpid)
