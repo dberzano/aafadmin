@@ -25,11 +25,13 @@ Skel=(
 
 # Files to copy in bin
 FilesBin=(
-  'create-deps.rb'
+  'create-deps-real.rb'
+  'create-deps.sh'
   'gen-proof-cfg.sh'
   'gen-afdsmgrd-cfg.sh'
   'push-puppet.sh'
   'add-remove-proof-node.sh'
+  'afdsutil.sh'
 )
 
 # Files to copy in etc/proof (don't overwrite)
@@ -45,6 +47,11 @@ FilesEtcProof=(
 # Files to copy in etc/proof (don't overwrite)
 FilesEtcInitd=(
   'init.d/proof'
+)
+
+# Files to copy in etc
+FilesEtc=(
+  'env-alice.sh'
 )
 
 # Function that copies overwriting
@@ -151,6 +158,7 @@ function Main {
   Copy -o    'bin' "${FilesBin[@]}" || exit $?
   Copy $Keep 'etc/proof' "${FilesEtcProof[@]}" || exit $?
   Copy -o    'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
+  Copy -o    'etc' "${FilesEtc[@]}" || exit $?
 
   # Generates configuration using the installed utility
   echo 'Invoking utility to generate PROOF configuration from template:'
@@ -172,6 +180,9 @@ function Main {
   # Linking afdsmgrd startup script
   echo 'Linking startup script of afdsmgrd'
   ln -nfsv "$AF_ROOT_PROOF/etc/proof/init.d/afdsmgrd" "$AF_PREFIX/etc/init.d/afdsmgrd"
+
+  # Copying afdsmgrd macro to a writable directory
+  Copy -o "var/proof" "$AF_ROOT_PROOF/etc/proof/utils/afdsmgrd/afdsutil.C"
 
 }
 

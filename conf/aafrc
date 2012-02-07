@@ -33,3 +33,6 @@ export AF_DEPLOY_DEST='root@t2-se-00.to.infn.it:/etc/puppet/modules/alice-proof-
 
 # Shared storage prefix (on POSIX filesystem)
 export AF_SHARED_DATA='/storage'
+
+# AliEn user associated to the host certificate of PROOF master
+export AF_ALIEN_USER='proof'

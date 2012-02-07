@@ -58,6 +58,7 @@ while [ "$1" != "--" ] ; do
 
     --root)
       RootVer="$2"
+      [ "$RootVer" == 'current' ] && RootVer=$(basename "$AF_ROOT_PROOF")
       shift 2
     ;;
 
@@ -73,6 +74,7 @@ while [ "$1" != "--" ] ; do
 
     --verbose)
       Verbose=1
+      shift
     ;;
 
     *)
@@ -115,7 +117,7 @@ if [ "$RootVer" == '' ] && [ "$AliRootVer" == '' ] && \
   echo "  source $Prog --aliroot VER"
   echo ''
   echo 'Enable the sole ROOT using:'
-  echo "  source $Prog --root VER"
+  echo "  source $Prog --root VER|\"current\""
   echo ''
   echo 'Enable the sole AliEn using:'
   echo "  source $Prog --alien"
@@ -176,7 +178,7 @@ export PATH="$ROOTSYS/bin:$PATH"
 export LD_LIBRARY_PATH="$ROOTSYS/lib:$LD_LIBRARY_PATH"
 
 if [ "$AliRootVer" == '' ]; then
-  [ "$Verbose" == 1 ] && echo 'ROOT environment set'
+  [ "$Verbose" == 1 ] && echo "ROOT environment set ($RootVer)"
   CleanUp
   return 0
 fi
@@ -202,6 +204,10 @@ export LD_LIBRARY_PATH="$ALICE_ROOT/lib/tgt_$Arch:$LD_LIBRARY_PATH"
 # The end
 #
 
-[ "$Verbose" == 1 ] && echo 'AliRoot environment set'
+if [ "$Verbose" == 1 ]; then
+  echo -n "AliRoot environment set "
+  echo "(ROOT=$RootVer, Geant3=$Geant3Ver, AliRoot=$AliRootVer)"
+fi
+
 CleanUp
 return 0
