@@ -2,11 +2,11 @@
 # template instead of changing it.
 
 xpd.datasetsrc file url:$TPL_PROOF_DATASETS mss:$AF_SHARED_DATA opt:Cq:Av:Ar: rw=1
-dsmgrd.urlregex alien://(.*)\$ $AF_SHARED_DATA/\$1
+dsmgrd.urlregex alien://(.*)\$ $AF_SHARED_DATA\$1
 dsmgrd.sleepsecs 30
 dsmgrd.scandseveryloops 10
 dsmgrd.parallelxfrs 30
-dsmgrd.stagecmd $AF_ROOT_PROOF/etc/proof/afdsmgrd-xrd-stage-verify.sh "\$URLTOSTAGE" "\$TREENAME"
+dsmgrd.stagecmd $AF_PREFIX/bin/af-alien_cp-verify.sh "\$URLTOSTAGE" "\$TREENAME"
 dsmgrd.cmdtimeoutsecs 1800
 dsmgrd.corruptafterfails 10
 

@@ -32,6 +32,8 @@ FilesBin=(
   'push-puppet.sh'
   'add-remove-proof-node.sh'
   'afdsutil.sh'
+  'af-alien_cp-verify.sh'
+  'afdsutil.C'
 )
 
 # Files to copy in etc/proof (don't overwrite)
@@ -52,6 +54,7 @@ FilesEtcInitd=(
 # Files to copy in etc
 FilesEtc=(
   'env-alice.sh'
+  'af-alien-lib.sh'
 )
 
 # Function that copies overwriting
