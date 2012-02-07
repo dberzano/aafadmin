@@ -13,6 +13,15 @@ source /etc/aafrc || exit 1
 # Prefix for ROOT packages
 export TPL_ROOT_PREFIX=$AF_PACK_DIR/VO_ALICE/ROOT
 
+# Name of master without domain
+export TPL_MASTER_SHORT=${AF_MASTER%%.*}
+
+# Pool directory of PROOF
+export TPL_VAR="$AF_PREFIX/var/proof"
+
+# Configuration directory of PROOF
+export TPL_ETC="$AF_PREFIX/etc/proof"
+
 # ROOT versions available, separated by a pipe
 export TPL_ROOT_VER=$(
   cd "$TPL_ROOT_PREFIX" ;

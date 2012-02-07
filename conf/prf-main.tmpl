@@ -17,17 +17,11 @@
 # Global variables
 #
 
-# The PROOF pool directory
-set gPoolPath = $AF_PREFIX/var/proof
-
 # Default ROOT (normally it is a symlink to an AliEn package)
 set gRootsys = /opt/alisw/root
 
 ## Unused
 ## set gRootsysDbg = /opt/aaf/root_dbg
-
-# Configuration files for PROOF
-set gProofConf = $AF_PREFIX/etc/proof
 
 # Globus directory (for certificates, etc.)
 set gGlobusPath = $AF_ALIEN_DIR/globus
@@ -38,11 +32,8 @@ set gGridSecurityPath = /etc/grid-security
 # Used for authentication: current hostname
 set gXrdSecGSISRVNAMES = $AF_MASTER
 
-# PROOF packages directory
+# Global PROOF packages directory
 set gPackageDir = $AF_PREFIX/var/proof/proofbox/$AF_USER/packages
-
-# The PROOF master for this network
-set gMaster = $AF_MASTER
 
 # Maximum concurrent sessions
 set gProofMaxSessions = 10
@@ -59,7 +50,7 @@ set gMemoryLimitVirt = 100000
 #
 
 # Administration path, that contains sockets
-all.adminpath \$gPoolPath/admin
+all.adminpath $TPL_VAR/admin
 
 # The PROOF port (see Global variables)
 xpd.port \$gPort
@@ -68,11 +59,11 @@ xpd.port \$gPort
 # configuration from the given file. This configuration might be however
 # specified in this very file - the only difference is that this file does not
 # get dynamically reloaded
-xpd.resource static \$gProofConf/proof.conf
+xpd.resource static $TPL_ETC/proof.conf
 
-## This "if-fi" block configures all the nodes but \$gMaster as workers too, but
+## This "if-fi" block configures all the nodes but the master as workers too, but
 ## it is not our case where we have only one machine
-## if \$gMaster
+## if $TPL_MASTER_SHORT*
 ## else
 ##  xpd.role worker
 ## fi
@@ -82,16 +73,17 @@ xpd.role any
 
 # ALICE group belongings are read from the following file. This option must be
 # specified twice for very good reasons
-xpd.groupfile \$gProofConf/groups.alice.cf
-xpd.putrc Proof.GroupFile: \$gProofConf/groups.alice.cf
+xpd.groupfile $TPL_ETC/groups.alice.cf
+xpd.putrc Proof.GroupFile: $TPL_ETC/groups.alice.cf
 
 # The dataset manager runs on the PROOF master only
-if \$gMaster
-  xpd.datasetsrc file url:\$gPoolPath/datasets mss:root://pmaster.to.infn.it opt:-Av:As: rw=1
+if $TPL_MASTER_SHORT*
+## xpd.datasetsrc file url:$TPL_VAR/datasets mss:root://pmaster.to.infn.it opt:-Av:As: rw=1
+  xpd.datasetsrc file url:$TPL_VAR/datasets mss:$AF_SHARED_DATA opt:-Av:As: rw=1
 fi
 
 # Working directory (a temporary one)
-xpd.workdir \$gPoolPath/proofbox
+xpd.workdir $TPL_VAR/proofbox
 
 # Environment for AAF compatibility
 xpd.putenv ALICE_PROOF_AAF_ALIEN_PACKAGES=$AF_PACK_DIR
@@ -130,10 +122,10 @@ xpd.seclib libXrdSec.so
 sec.protparm gsi -gmapfun:libXrdSecgsiGMAPLDAP.so
 
 # Configuration file for the LDAP query
-sec.protparm gsi -gmapfunparms:\$gProofConf/XrdSecgsiGMAPFunLDAP.cf
+sec.protparm gsi -gmapfunparms:$TPL_ETC/XrdSecgsiGMAPFunLDAP.cf
 
 # Override subject/user mapping here (i.e. for admin purposes)
-sec.protparm gsi -gridmap:\$gProofConf/grid-mapfile
+sec.protparm gsi -gridmap:$TPL_ETC/grid-mapfile
 
 # Globus configuration for this machine. The dlgpxy:2 means that *your* proxy
 # creates another delegated proxy on each PROOF client. Very useful if, i.e.,
@@ -149,8 +141,8 @@ xpd.putenv XrdSecSSLUSERKEY=<workdir>/<user>/.creds/x509_u<uid>
 # Directory of valid CAs (used for standard SSL)
 xpd.putenv XrdSecSSLCADIR=\$gGlobusPath/share/certificates
 
-# AliEn stuff - don't know why I need it...
-xpd.putenv GCLIENT_SERVER_LIST=pcapiserv08.cern.ch:10000|
+## AliEn stuff - don't know why I need it...
+##xpd.putenv GCLIENT_SERVER_LIST=pcapiserv08.cern.ch:10000|
 
 # Directory of valid CAs (used for Globus extensions to SSL)
 xpd.putenv XrdSecGSICADIR=\$gGlobusPath/share/certificates

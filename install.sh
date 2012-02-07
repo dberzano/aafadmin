@@ -27,6 +27,7 @@ Skel=(
 FilesBin=(
   'create-deps.rb'
   'gen-proof-cfg.sh'
+  'gen-afdsmgrd-cfg.sh'
   'push-puppet.sh'
   'add-remove-proof-node.sh'
 )
@@ -34,6 +35,8 @@ FilesBin=(
 # Files to copy in etc/proof (don't overwrite)
 FilesEtcProof=(
   'conf/prf-main.tmpl'
+  'conf/afdsmgrd.tmpl'
+  'conf/afdsmgrd_env.tmpl'
   'conf/XrdSecgsiGMAPFunLDAP.cf'
   'conf/grid-mapfile'
   'conf/groups.alice.cf'
@@ -153,6 +156,11 @@ function Main {
   echo 'Invoking utility to generate PROOF configuration from template:'
   "$AF_PREFIX/bin/gen-proof-cfg.sh" || exit $?
 
+  # Generates configuration using the installed utility
+  echo 'Invoking utility to generate afdsmgrd configuration from template:'
+  "$AF_PREFIX/bin/gen-afdsmgrd-cfg.sh" || exit $?
+
+
   # proof.conf file is generated with current hostname as master only
   if [ ! -e "$AF_PREFIX/etc/proof/proof.conf" ] || [ "$Keep" == '-o' ]; then
     echo 'Generating proof.conf with current master name'
@@ -161,17 +169,9 @@ function Main {
     echo "master `hostname -f`" >> "$AF_PREFIX/etc/proof/proof.conf"
   fi
 
-  # Link ROOT version
-  #local RootSymlink="$AF_PREFIX/var/proof/root_current"
-  #if [ ! -L "$RootSymlink" ]; then
-  #  if [ ! -d "$RootPath" ]; then
-  #    echo "You need to specify the full path to PROOF's ROOT version with --root"
-  #    exit $ErrRootVer
-  #  else
-  #    echo "Symlinking ROOT version to $RootSymlink:"
-  #    ln -nfsv "$RootPath" "$RootSymlink" || exit $ErrRootSymlink
-  #  fi
-  #fi
+  # Linking afdsmgrd startup script
+  echo 'Linking startup script of afdsmgrd'
+  ln -nfsv "$AF_ROOT_PROOF/etc/proof/init.d/afdsmgrd" "$AF_PREFIX/etc/init.d/afdsmgrd"
 
 }
 

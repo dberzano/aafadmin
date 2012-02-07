@@ -30,3 +30,6 @@ export AF_PROOF_EXPORT="$AF_PREFIX/var/proof/export"
 # whatever you want). It is a rsync destination: it might or may not include
 # a host name
 export AF_DEPLOY_DEST='root@t2-se-00.to.infn.it:/etc/puppet/modules/alice-proof-slave/files/aaf'
+
+# Shared storage prefix (on POSIX filesystem)
+export AF_SHARED_DATA='/storage'

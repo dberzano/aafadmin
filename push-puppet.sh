@@ -10,7 +10,7 @@
 # Files to copy (wrt/ AF_PREFIX)
 Files=(
   '/etc/proof/XrdSecgsiGMAPFunLDAP.cf'
-  '/etc/proof/proof.conf'
+#  '/etc/proof/proof.conf'
   '/etc/proof/grid-mapfile'
   '/etc/proof/groups.alice.cf'
   '/etc/proof/prf-main.cf'
