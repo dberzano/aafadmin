@@ -4,12 +4,12 @@ export AF_ALIEN_DIR='/opt/exp_software/alice/alien'
 # Directory of AliEn packages
 export AF_PACK_DIR='/opt/exp_software/alice/packages'
 
-# Dependency file and URL
-export AF_DEP_FILE='/opt/aaf/var/deps.txt'
-export AF_DEP_URL='http://alienbuild.cern.ch:8889/tarballs/Packages'
-
 # Extra software (no packages) prefix
 export AF_PREFIX='/opt/aaf'
+
+# AliRoot dependency file and URL
+export AF_DEP_FILE="$AF_PREFIX/etc/aliroot_deps.conf"
+export AF_DEP_URL='http://alienbuild.cern.ch:8889/tarballs/Packages'
 
 # The PROOF master node
 export AF_MASTER='pmaster.to.infn.it'
