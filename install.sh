@@ -34,6 +34,7 @@ FilesBin=(
   'afdsutil.sh'
   'af-alien_cp-verify.sh'
   'afdsutil.C'
+  'proof-packages.sh'
 )
 
 # Files to copy in etc/proof (don't overwrite)

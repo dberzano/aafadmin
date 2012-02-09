@@ -72,7 +72,7 @@ while [ "$1" != "--" ] ; do
       shift
     ;;
 
-    --verbose)
+    --verbose|-v)
       Verbose=1
       shift
     ;;
