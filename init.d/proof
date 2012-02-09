@@ -11,7 +11,7 @@
 export COMMAND="$1"
 
 # Source AF environment
-source /etc/aafrc
+source /etc/aafrc || exit 1
 
 # Set up environment for ROOT version used for PROOF
 export ROOTSYS="$AF_ROOT_PROOF"
@@ -25,6 +25,7 @@ export XPREF="$AF_PREFIX"/var/proof
 # General exports for AAF compatibility
 #export ALICE_PROOF_AAF_PROOF_DIR="$XPREF"
 #export ALICE_PROOF_AAF_XROOTD_REDIRECTOR="$(hostname -f)"
+#export ALICE_PROOF_AAF_ALIEN_PACKAGES="$AF_PACK_DIR"
 
 # Guess binary for xproofd
 export XPDBIN="$ROOTSYS"/bin/xproofd

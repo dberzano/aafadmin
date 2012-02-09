@@ -87,6 +87,7 @@ xpd.workdir $TPL_VAR/proofbox
 
 # Environment for AAF compatibility
 xpd.putenv ALICE_PROOF_AAF_ALIEN_PACKAGES=$AF_PACK_DIR
+xpd.putenv AF_DEP_FILE=$AF_DEP_FILE
 
 # To me it is unclear why these options go here - aren't they xrootd-specific?
 xpd.poolurl root://$AF_MASTER/
