@@ -5,4 +5,4 @@
 #
 
 source /etc/aafrc || exit 1
-exec "$AF_PREFIX/bin/create-deps-real.rb"
+exec "`dirname "$0"`"/create-deps-real.rb "$@"

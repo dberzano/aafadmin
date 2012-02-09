@@ -1,7 +1,7 @@
 #!/usr/bin/ruby
 
 #
-# create-deps.rb -- by Dario Berzano <dario.berzano@cern.ch>
+# create-deps-real.rb -- by Dario Berzano <dario.berzano@cern.ch>
 #
 # Creates the dependency file for AliRoot versions. The following environment
 # variables are needed:
@@ -41,6 +41,9 @@ def get_ali_packages(url, pack_dir)
         # Consider only AliRoot packages
         next unless (ary[1] == 'AliRoot')
 
+        # Get the VO name (like VO_ALICE, for instance)
+        vo_name = ary[4].split('@').first
+
         # Check integrity of line format
         deps = ary[5].split(',')
         dep_root = nil
@@ -54,9 +57,9 @@ def get_ali_packages(url, pack_dir)
         end
         next unless (dep_root && dep_geant3)
 
-        # Check if package is installed
+        # Check if package is installed for real
         if (pack_dir &&
-          !File.exists?("#{pack_dir}/VO_ALICE/AliRoot/#{ary[2]}/#{ary[2]}"))
+          !File.exists?("#{pack_dir}/#{vo_name}/AliRoot/#{ary[2]}/#{ary[2]}"))
           next
         end
 
