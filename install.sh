@@ -13,6 +13,7 @@ ErrMissingRc=2
 ErrCp=3
 ErrRootVer=4
 ErrRootSymlink=5
+ErrHelp=42
 
 # Directories to create
 Skel=(
@@ -32,9 +33,10 @@ FilesBin=(
   'push-puppet.sh'
   'add-remove-proof-node.sh'
   'afdsutil.sh'
-  'af-alien_cp-verify.sh'
+  'af-xrddm-verify.sh'
   'afdsutil.C'
   'proof-packages.sh'
+  'xrddm-wrapper.sh'
 )
 
 # Files to copy in etc/proof (don't overwrite)
@@ -57,6 +59,10 @@ FilesEtc=(
   'env-alice.sh'
   'af-alien-lib.sh'
 )
+
+# xrddm source and destination
+export XrddmUrl='http://xrootd-dm.googlecode.com/svn/trunk'
+export XrddmTmp='/tmp/xrddm-trunk'
 
 # Function that copies overwriting
 function Copy {
@@ -86,6 +92,22 @@ function Copy {
   done
 }
 
+# Prints help
+function PrintHelp {
+
+  local Prog
+  Prog=`basename "$0"`
+
+  echo "$Prog -- by Dario Berzano <dario.berzano@cern.ch>" >&2
+  echo 'Installs AF related stuff. File /etc/aafrc must be preinstalled' >&2
+  echo '' >&2
+  echo "Usage: $Prog [options]" >&2
+  echo '  -o, --overwrite                  overwrites template files' >&2
+  echo '  -n, --no-config                  do not regenerate configs' >&2
+  echo '      --force-xrddm                force reinstallation of xrddm' >&2
+
+}
+
 # The main function
 function Main {
 
@@ -106,7 +128,8 @@ function Main {
   local Keep='-k'
   local RootPath=''
 
-  Args=$(getopt -o 'or:' --long 'overwrite,root:' -n"$Prog" -- "$@")
+  Args=$(getopt -o 'onh' --long 'overwrite,no-config,force-xrddm,help' \
+    -n"$Prog" -- "$@")
   [ $? == 0 ] || return $ErrArgs
 
   eval set -- "$Args"
@@ -120,10 +143,20 @@ function Main {
         shift
       ;;
 
-      #--root|-r)
-      #  RootPath="$2"
-      #  shift 2
-      #;;
+      --no-config|-n)
+        NoConfig=1
+        shift
+      ;;
+
+      --force-xrddm)
+        ForceXrddm=1
+        shift
+      ;;
+
+      --help)
+        PrintHelp
+        exit $ErrHelp
+      ;;
 
       *)
         # Should never happen
@@ -164,14 +197,42 @@ function Main {
   Copy -o    'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
   Copy -o    'etc' "${FilesEtc[@]}" || exit $?
 
-  # Generates configuration using the installed utility
-  echo 'Invoking utility to generate PROOF configuration from template:'
-  "$AF_PREFIX/bin/gen-proof-cfg.sh" || exit $?
+  # xrddm: download and compile if forced or if unpresent
+  if [ ! -x "$AF_PREFIX"/bin/xrddm ] || [ "$ForceXrddm" == 1 ]; then
+    echo 'Downloading and compiling xrddm...' >&2
+    (
+      export XRDDMSYS="$AF_PREFIX"
+      export XROOTD_DIR="$AF_ALIEN_DIR/api"
+      export ALIEN_DIR="$AF_ALIEN_DIR"
 
-  # Generates configuration using the installed utility
-  echo 'Invoking utility to generate afdsmgrd configuration from template:'
-  "$AF_PREFIX/bin/gen-afdsmgrd-cfg.sh" || exit $?
+      source "$AF_PREFIX"/etc/env-alice.sh --root current --verbose && \
+      rm -rvf "$XrddmTmp"/build && \
+      mkdir -vp "$XrddmTmp"/build && \
+      svn co "$XrddmUrl" "$XrddmTmp" && \
+      cd "$XrddmTmp"/build && \
+      cmake "$XrddmTmp" && \
+        make && make install
 
+      exit $?
+    ) || exit $?
+  else
+    echo 'xrddm already present: skipping' >&2
+  fi
+
+  # With an option we can avoid regeneration of configuration files
+  if [ "$NoConfig" != 1 ]; then
+
+    # Generates configuration using the installed utility
+    echo 'Invoking utility to generate PROOF configuration from template:'
+    "$AF_PREFIX/bin/gen-proof-cfg.sh" || exit $?
+
+    # Generates configuration using the installed utility
+    echo 'Invoking utility to generate afdsmgrd configuration from template:'
+    "$AF_PREFIX/bin/gen-afdsmgrd-cfg.sh" || exit $?
+
+  else
+    echo 'Skipping generation of configuration files from templates' >&2
+  fi
 
   # proof.conf file is generated with current hostname as master only
   if [ ! -e "$AF_PREFIX/etc/proof/proof.conf" ] || [ "$Keep" == '-o' ]; then

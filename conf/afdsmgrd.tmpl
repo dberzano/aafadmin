@@ -6,7 +6,7 @@ dsmgrd.urlregex alien://(.*)\$ $AF_SHARED_DATA\$1
 dsmgrd.sleepsecs 30
 dsmgrd.scandseveryloops 10
 dsmgrd.parallelxfrs 30
-dsmgrd.stagecmd $AF_PREFIX/bin/af-alien_cp-verify.sh "\$URLTOSTAGE" "\$TREENAME"
+dsmgrd.stagecmd $AF_PREFIX/bin/af-xrddm-verify.sh "\$URLTOSTAGE" "\$TREENAME"
 dsmgrd.cmdtimeoutsecs 1800
 dsmgrd.corruptafterfails 10
 
