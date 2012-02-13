@@ -15,7 +15,6 @@ source /etc/aafrc || exit 1
 # Temporary workaroud until we fix afdsmgrd's setuid BIG problem
 # IT REALLY SHOULD BE FIXED **NOW** AND I MEAN IT
 if [ `whoami` == 'root' ]; then
-  chmod 0777 /tmp/puffa
   exec su $AF_USER -c "$0 $@"
   exit 1 # not reached
 fi
@@ -51,7 +50,7 @@ Tree="$2"
 
 PosixPath=${Url%%#*}
 Anchor=${Url##*#}
-[ Anchor == '$Url' ] && Anchor=''
+[ "$Anchor" == "$Url" ] && Anchor=''
 
 # They both work. The first one also resolves '.' and '..'
 #PosixPath=$(readlink -m "$PosixPath")
@@ -64,6 +63,7 @@ if [ ! -e "$PosixPath" ]; then
   AlienPath=${PosixPath:${#AF_SHARED_DATA}}
   AlienPath="alien://$AlienPath"
 
+  # Uncomment for debug
   #echo "Url       => $Url"
   #echo "PosixPath => $PosixPath"
   #echo "Anchor    => $Anchor"
@@ -72,7 +72,7 @@ if [ ! -e "$PosixPath" ]; then
   #echo "Command   => alien_cp $AlienPath $PosixPath
 
   # Perform automatic authentication: exit on failure
-  AutoAuth > /dev/null || Abort 'alien-token'
+  AutoAuth || Abort 'alien-token'
 
   # Create destination directories
   mkdir -p $(dirname "$PosixPath") || Abort 'mkdir'
