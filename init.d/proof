@@ -63,6 +63,13 @@ function xpdpid() {
     grep -v grep | awk '{print $1}'
 }
 
+# Dataset permissions
+function ds_perm() {
+  chmod 3777 "$AF_DATASETS"
+  #find "$AF_DATASETS" -type d -exec chmod 0377 '{}' \;
+  #find "$AF_DATASETS" -type d -exec chgrp $AF_GROUP '{}' \;
+}
+
 # Creates skeleton for PROOF
 function xpdskel() {
 
@@ -96,14 +103,12 @@ function xpdskel() {
   chmod 1777 "$XADM"
 
   # Datasets directory
-  local XDS="$XPREF/datasets"
-  mkdir -p "$XDS" 2> /dev/null
+  mkdir -p "$AF_DATASETS" 2> /dev/null
   if [ $? != 0 ]; then
-    echo "Can't create datasets directory $XDS"
+    echo "Can't create datasets directory $AF_DATASETS"
     return 1
   fi
-  chown root:root "$XDS"
-  chmod 1777 "$XDS"
+  chown $AF_USER:$AF_GROUP "$AF_DATASETS"
 
   # The "proofbox" directory (under the working directory)
   local XWD="$XPREF/proofbox"
@@ -178,6 +183,8 @@ function xpdstart() {
       echo "Starting of xproofd failed"
       return 1
     else
+      # Started with success: fix dataset path permissions
+      sleep 1 ; ds_perm
       echo "xproofd started with PID $PID"
     fi
   else

@@ -144,6 +144,9 @@ export X509_CERT_DIR="$AF_ALIEN_DIR"/globus/share/certificates
 export PATH="$AF_ALIEN_DIR/bin:$AF_ALIEN_DIR/api/bin:$PATH"
 export LD_LIBRARY_PATH="$AF_ALIEN_DIR/lib:$AF_ALIEN_DIR/api/lib:$LD_LIBRARY_PATH"
 
+# Extra variables
+export GSHELL_ROOT="$AF_ALIEN_DIR/api"
+
 if [ "$AliEnOnly" == 1 ]; then
   [ "$Verbose" == 1 ] && echo 'AliEn environment set'
   CleanUp

@@ -18,25 +18,21 @@ ErrHelp=42
 # Directories to create
 Skel=(
   'bin'
-#  'var/proof'
-#  'var/log'
   'etc/proof'
   'etc/init.d'
+  'var/run'
 )
 
 # Files to copy in bin
 FilesBin=(
   'create-deps-real.rb'
   'create-deps.sh'
-  'gen-proof-cfg.sh'
-  'gen-afdsmgrd-cfg.sh'
   'push-puppet.sh'
   'add-remove-proof-node.sh'
   'afdsutil.sh'
   'af-xrddm-verify.sh'
   'afdsutil.C'
   'proof-packages.sh'
-  'xrddm-wrapper.sh'
 )
 
 # Files to copy in etc/proof (don't overwrite)
@@ -105,6 +101,7 @@ function PrintHelp {
   echo '  -o, --overwrite                  overwrites template files' >&2
   echo '  -n, --no-config                  do not regenerate configs' >&2
   echo '      --force-xrddm                force reinstallation of xrddm' >&2
+  echo '      --custom-afdsmgrd            prefix to a custom afdsmgrd' >&2
 
 }
 
@@ -128,7 +125,8 @@ function Main {
   local Keep='-k'
   local RootPath=''
 
-  Args=$(getopt -o 'onh' --long 'overwrite,no-config,force-xrddm,help' \
+  Args=$(getopt -o 'onh' \
+    --long 'overwrite,no-config,force-xrddm,custom-afdsmgrd:,help' \
     -n"$Prog" -- "$@")
   [ $? == 0 ] || return $ErrArgs
 
@@ -151,6 +149,11 @@ function Main {
       --force-xrddm)
         ForceXrddm=1
         shift
+      ;;
+
+      --custom-afdsmgrd)
+        export CustomAfdsmgrd=`readlink -m "$2"`
+        shift 2
       ;;
 
       --help)
@@ -223,12 +226,75 @@ function Main {
   if [ "$NoConfig" != 1 ]; then
 
     # Generates configuration using the installed utility
-    echo 'Invoking utility to generate PROOF configuration from template:'
-    "$AF_PREFIX/bin/gen-proof-cfg.sh" || exit $?
+    #echo 'Invoking utility to generate PROOF configuration from template:' >&2
+    #"$AF_PREFIX/bin/gen-proof-cfg.sh" || exit $?
+    echo 'Generating PROOF configuration...' >&2
+    (
+      # Path prefix for ROOT packages
+      export TPL_ROOT_PREFIX=$AF_PACK_DIR/VO_ALICE/ROOT
+
+      # PROOF master, without domain
+      export TPL_MASTER_SHORT=${AF_MASTER%%.*}
+
+      export TPL_VAR="$AF_PREFIX/var/proof"
+      export TPL_ETC="$AF_PREFIX/etc/proof"
+
+      # ROOT versions available, separated by a pipe
+      export TPL_ROOT_VER=$(
+        cd "$TPL_ROOT_PREFIX" ;
+        ls -1d */ | cut -d/ -f1 | \
+        while read RootVer ; do
+          echo -n "$RootVer|"
+        done)
+
+      cd "$AF_PREFIX"/etc/proof || exit 1
+      cheetah fill --env --oext cf prf-main.tmpl
+      exit $?
+    ) || exit $?
 
     # Generates configuration using the installed utility
-    echo 'Invoking utility to generate afdsmgrd configuration from template:'
-    "$AF_PREFIX/bin/gen-afdsmgrd-cfg.sh" || exit $?
+    #echo 'Invoking utility to generate afdsmgrd configuration from template:'
+    #"$AF_PREFIX/bin/gen-afdsmgrd-cfg.sh" || exit $?
+    (
+# Linking afdsmgrd startup script
+#   echo 'Linking startup script of afdsmgrd'
+#   ln -nfsv "$AF_ROOT_PROOF/etc/proof/init.d/afdsmgrd" "$AF_PREFIX/etc/init.d/afdsmgrd"
+# 
+# Copying afdsmgrd macro to a writable directory
+#   Copy -o "var/proof" "$AF_ROOT_PROOF/etc/proof/utils/afdsmgrd/afdsutil.C"
+
+      if [ "$CustomAfdsmgrd" != '' ]; then
+        # Using custom afdsmgrd
+        echo 'Generating afdsmgrd (custom) configuration...' >&2
+        export TPL_DIR_BIN="$CustomAfdsmgrd"/bin
+        export TPL_DIR_LIBEXEC="$CustomAfdsmgrd"/libexec
+        export TPL_DIR_LIB="$CustomAfdsmgrd"/lib
+        export Initd="$CustomAfdsmgrd"/etc/init.d/afdsmgrd
+        export Afdsutil="$CustomAfdsmgrd"/share/afdsutil.C
+      else
+        # Using afdsmgrd provided with current version of ROOT
+        echo 'Generating afdsmgrd (from ROOT) configuration...' >&2
+        export TPL_DIR_BIN="$AF_ROOT_PROOF"/bin
+        export TPL_DIR_LIBEXEC="$AF_ROOT_PROOF"/etc/proof
+        export TPL_DIR_LIB="$AF_ROOT_PROOF"/etc/proof/lib
+        export Initd="$AF_ROOT_PROOF"/etc/proof/init.d/afdsmgrd
+        export Afdsutil="$AF_ROOT_PROOF"/etc/proof/utils/afdsmgrd/afdsutil.C
+      fi
+
+      cd "$AF_PREFIX"/etc/proof || exit 1
+
+      cheetah fill --env --oext conf afdsmgrd.tmpl    # config
+      cheetah fill --env --oext sh afdsmgrd_env.tmpl  # sysconfig
+
+      # Linking afdsmgrd startup script
+      echo 'Linking startup script of afdsmgrd'
+      ln -nfsv "$Initd" "$AF_PREFIX/etc/init.d/afdsmgrd"
+
+      # Copying afdsmgrd macro to a writable directory
+      Copy -o "var/proof" "$Afdsutil"
+
+      exit $?
+    ) || exit $?
 
   else
     echo 'Skipping generation of configuration files from templates' >&2
@@ -241,13 +307,6 @@ function Main {
       > "$AF_PREFIX/etc/proof/proof.conf"
     echo "master `hostname -f`" >> "$AF_PREFIX/etc/proof/proof.conf"
   fi
-
-  # Linking afdsmgrd startup script
-  echo 'Linking startup script of afdsmgrd'
-  ln -nfsv "$AF_ROOT_PROOF/etc/proof/init.d/afdsmgrd" "$AF_PREFIX/etc/init.d/afdsmgrd"
-
-  # Copying afdsmgrd macro to a writable directory
-  Copy -o "var/proof" "$AF_ROOT_PROOF/etc/proof/utils/afdsmgrd/afdsutil.C"
 
 }
 

@@ -17,9 +17,6 @@
 # Global variables
 #
 
-# Default ROOT (normally it is a symlink to an AliEn package)
-set gRootsys = /opt/alisw/root
-
 ## Unused
 ## set gRootsysDbg = /opt/aaf/root_dbg
 
@@ -78,8 +75,8 @@ xpd.putrc Proof.GroupFile: $TPL_ETC/groups.alice.cf
 
 # The dataset manager runs on the PROOF master only
 if $TPL_MASTER_SHORT*
-## xpd.datasetsrc file url:$TPL_VAR/datasets mss:root://pmaster.to.infn.it opt:-Av:As: rw=1
-  xpd.datasetsrc file url:$TPL_VAR/datasets mss:$AF_SHARED_DATA opt:-Av:As: rw=1
+## xpd.datasetsrc file url:$AF_DATASETS mss:root://pmaster.to.infn.it opt:-Av:As: rw=1
+  xpd.datasetsrc file url:$AF_DATASETS mss:$AF_SHARED_DATA opt:-Av:As: rw=1
 fi
 
 # Working directory (a temporary one)

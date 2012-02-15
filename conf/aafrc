@@ -17,7 +17,6 @@ export AF_MASTER='pmaster.to.infn.it'
 # Unprivileged administrative user and group
 export AF_USER=sysman
 export AF_GROUP=wheel
-#export AF_GROUP=`[ $(whoami) == 'root' ] && su $AF_USER -c "groups | awk '{ print $1 }'" || (groups | awk '{ print $1 }')`
 
 # ROOT directory of current PROOF version (must be full and explicit, and not
 # necessarily a ROOT coming from Packman
@@ -25,6 +24,9 @@ export AF_ROOT_PROOF="/opt/exp_software/alice/packages/VO_ALICE/ROOT/v5-30-06/v5
 
 # Directory exported via internal PROOF's Xrootd
 export AF_PROOF_EXPORT="$AF_PREFIX/var/proof/export"
+
+# Datasets directory
+export AF_DATASETS="$AF_PREFIX/var/proof/datasets_new"
 
 # Destination of the files to be deployed to each machine (with Puppet or
 # whatever you want). It is a rsync destination: it might or may not include
