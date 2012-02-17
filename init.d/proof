@@ -63,13 +63,6 @@ function xpdpid() {
     grep -v grep | awk '{print $1}'
 }
 
-# Dataset permissions
-function ds_perm() {
-  chmod 3777 "$AF_DATASETS"
-  #find "$AF_DATASETS" -type d -exec chmod 0377 '{}' \;
-  #find "$AF_DATASETS" -type d -exec chgrp $AF_GROUP '{}' \;
-}
-
 # Creates skeleton for PROOF
 function xpdskel() {
 
@@ -183,8 +176,6 @@ function xpdstart() {
       echo "Starting of xproofd failed"
       return 1
     else
-      # Started with success: fix dataset path permissions
-      sleep 1 ; ds_perm
       echo "xproofd started with PID $PID"
     fi
   else
