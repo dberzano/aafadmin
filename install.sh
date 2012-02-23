@@ -21,6 +21,7 @@ Skel=(
   'etc/proof'
   'etc/init.d'
   'var/run'
+  'var/proof'
 )
 
 # Files to copy in bin
@@ -68,18 +69,18 @@ function Copy {
   [ "$1" == '-o' ] && Keep=0 || Keep=1
   shift 2
 
-  echo -n "Copying files in $Dest "
-  [ "$Keep" == 1 ] && echo "(won't overwrite):" || echo "(overwrite):"
+  pecho -n "Copying files in $Dest "
+  [ "$Keep" == 1 ] && pecho "(won't overwrite):" || pecho "(overwrite):"
 
   while [ $# -gt 0 ] ; do
     File="$AF_PREFIX/$Dest/`basename "$1"`"
 
     if [ "$Keep" == 1 ] && [ -e "$File" ]; then
-      echo "keeping \`$File'"
+      pecho "keeping \`$File'"
     else
       cp -pv "$1" "$File"
       if [ $? != 0 ]; then
-        echo 'Error copying: aborting'
+        pecho 'Error copying: aborting'
         return $ErrCp
       fi
     fi
@@ -94,15 +95,24 @@ function PrintHelp {
   local Prog
   Prog=`basename "$0"`
 
-  echo "$Prog -- by Dario Berzano <dario.berzano@cern.ch>" >&2
-  echo 'Installs AF related stuff. File /etc/aafrc must be preinstalled' >&2
-  echo '' >&2
-  echo "Usage: $Prog [options]" >&2
-  echo '  -o, --overwrite                  overwrites template files' >&2
-  echo '  -n, --no-config                  do not regenerate configs' >&2
-  echo '      --force-xrddm                force reinstallation of xrddm' >&2
-  echo '      --custom-afdsmgrd            prefix to a custom afdsmgrd' >&2
+  pecho "$Prog -- by Dario Berzano <dario.berzano@cern.ch>"
+  pecho 'Installs AF related stuff. File /etc/aafrc must be preinstalled'
+  pecho ''
+  pecho "Usage: $Prog [options]"
+  pecho '  -o, --overwrite                  overwrites template files'
+  pecho '  -n, --no-config                  do not regenerate configs'
+  pecho '      --force-xrddm                force reinstallation of xrddm'
 
+}
+
+# Bright echo on stderr
+function pecho() {
+  local NewLine=''
+  if [ "$1" == -n ]; then
+    NewLine='-n'
+    shift
+  fi
+  echo -e $NewLine "\033[1m$1\033[m" >&2
 }
 
 # The main function
@@ -111,8 +121,8 @@ function Main {
   # Source environment variables
   source /etc/aafrc 2> /dev/null
   if [ $? != 0 ]; then
-    echo 'Can not find configuration file /etc/aafrc.' >&2
-    echo 'Please put it in place, configure it to your needs and try again.' >&2
+    pecho 'Can not find configuration file /etc/aafrc.'
+    pecho 'Please put it in place, configure it to your needs and try again.'
     return $ErrMissingRc
   fi
 
@@ -126,7 +136,7 @@ function Main {
   local RootPath=''
 
   Args=$(getopt -o 'onh' \
-    --long 'overwrite,no-config,force-xrddm,custom-afdsmgrd:,help' \
+    --long 'overwrite,no-config,force-xrddm,help' \
     -n"$Prog" -- "$@")
   [ $? == 0 ] || return $ErrArgs
 
@@ -151,11 +161,6 @@ function Main {
         shift
       ;;
 
-      --custom-afdsmgrd)
-        export CustomAfdsmgrd=`readlink -m "$2"`
-        shift 2
-      ;;
-
       --help)
         PrintHelp
         exit $ErrHelp
@@ -173,22 +178,27 @@ function Main {
 
   shift # --
 
+  # Custom afdsmgrd defined in aafrc
+  if [ "$AF_CUSTOM_AFDSMGRD" != '' ]; then
+    CustomAfdsmgrd=`readlink -m "$AF_CUSTOM_AFDSMGRD"`
+  fi
+
   # Try to create the destination directory
   mkdir -p "$AF_PREFIX"
   if [ $? != 0 ]; then
-    echo "Can not create directory $AF_PREFIX: as root, do:"
-    echo "  mkdir -p '$AF_PREFIX'"
-    echo "  chown $AF_USER:$AF_GROUP '$AF_PREFIX'"
+    pecho "Can not create directory $AF_PREFIX: as root, do:"
+    pecho "  mkdir -p '$AF_PREFIX'"
+    pecho "  chown $AF_USER:$AF_GROUP '$AF_PREFIX'"
     return $ErrMkdir
   fi
 
   # Create skeleton
-  echo -n 'Creating directory structure:'
+  pecho -n 'Creating directory structure:'
   for S in "${Skel[@]}" ; do
-    echo -n " $AF_PREFIX/$S"
+    pecho -n " $AF_PREFIX/$S"
     mkdir -p "$AF_PREFIX/$S"
     if [ $? != 0 ]; then
-      echo 'Error creating directory: aborting.' >&2
+      pecho 'Error creating directory: aborting.'
       exit $ErrMkdir
     fi
   done
@@ -196,13 +206,18 @@ function Main {
 
   # Install files (-o: overwrite, -k: keep)
   Copy -o    'bin' "${FilesBin[@]}" || exit $?
-  Copy $Keep 'etc/proof' "${FilesEtcProof[@]}" || exit $?
+  #Copy $Keep 'etc/proof' "${FilesEtcProof[@]}" || exit $?
+  Copy -o    'etc/proof' "${FilesEtcProof[@]}" || exit $?
   Copy -o    'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
   Copy -o    'etc' "${FilesEtc[@]}" || exit $?
 
+  # Create dependencies immediately
+  pecho 'Creating software dependencies...'
+  "$AF_PREFIX"/bin/create-deps.sh
+
   # xrddm: download and compile if forced or if unpresent
   if [ ! -x "$AF_PREFIX"/bin/xrddm ] || [ "$ForceXrddm" == 1 ]; then
-    echo 'Downloading and compiling xrddm...' >&2
+    pecho 'Downloading and compiling xrddm...'
     (
       export XRDDMSYS="$AF_PREFIX"
       export XROOTD_DIR="$AF_ALIEN_DIR/api"
@@ -219,16 +234,14 @@ function Main {
       exit $?
     ) || exit $?
   else
-    echo 'xrddm already present: skipping' >&2
+    pecho 'xrddm already present: skipping'
   fi
 
   # With an option we can avoid regeneration of configuration files
   if [ "$NoConfig" != 1 ]; then
 
-    # Generates configuration using the installed utility
-    #echo 'Invoking utility to generate PROOF configuration from template:' >&2
-    #"$AF_PREFIX/bin/gen-proof-cfg.sh" || exit $?
-    echo 'Generating PROOF configuration...' >&2
+    # Generates PROOF configuration
+    pecho 'Generating PROOF configuration...'
     (
       # Path prefix for ROOT packages
       export TPL_ROOT_PREFIX=$AF_PACK_DIR/VO_ALICE/ROOT
@@ -252,20 +265,12 @@ function Main {
       exit $?
     ) || exit $?
 
-    # Generates configuration using the installed utility
-    #echo 'Invoking utility to generate afdsmgrd configuration from template:'
-    #"$AF_PREFIX/bin/gen-afdsmgrd-cfg.sh" || exit $?
+    # Generates afdsmgrd configuration
     (
-# Linking afdsmgrd startup script
-#   echo 'Linking startup script of afdsmgrd'
-#   ln -nfsv "$AF_ROOT_PROOF/etc/proof/init.d/afdsmgrd" "$AF_PREFIX/etc/init.d/afdsmgrd"
-# 
-# Copying afdsmgrd macro to a writable directory
-#   Copy -o "var/proof" "$AF_ROOT_PROOF/etc/proof/utils/afdsmgrd/afdsutil.C"
 
       if [ "$CustomAfdsmgrd" != '' ]; then
         # Using custom afdsmgrd
-        echo 'Generating afdsmgrd (custom) configuration...' >&2
+        pecho 'Generating afdsmgrd (custom) configuration...'
         export TPL_DIR_BIN="$CustomAfdsmgrd"/bin
         export TPL_DIR_LIBEXEC="$CustomAfdsmgrd"/libexec
         export TPL_DIR_LIB="$CustomAfdsmgrd"/lib
@@ -273,7 +278,7 @@ function Main {
         export Afdsutil="$CustomAfdsmgrd"/share/afdsutil.C
       else
         # Using afdsmgrd provided with current version of ROOT
-        echo 'Generating afdsmgrd (from ROOT) configuration...' >&2
+        pecho 'Generating afdsmgrd (from ROOT) configuration...'
         export TPL_DIR_BIN="$AF_ROOT_PROOF"/bin
         export TPL_DIR_LIBEXEC="$AF_ROOT_PROOF"/etc/proof
         export TPL_DIR_LIB="$AF_ROOT_PROOF"/etc/proof/lib
@@ -287,7 +292,7 @@ function Main {
       cheetah fill --env --oext sh afdsmgrd_env.tmpl  # sysconfig
 
       # Linking afdsmgrd startup script
-      echo 'Linking startup script of afdsmgrd'
+      pecho 'Linking startup script of afdsmgrd'
       ln -nfsv "$Initd" "$AF_PREFIX/etc/init.d/afdsmgrd"
 
       # Copying afdsmgrd macro to a writable directory
@@ -297,16 +302,20 @@ function Main {
     ) || exit $?
 
   else
-    echo 'Skipping generation of configuration files from templates' >&2
+    pecho 'Skipping generation of configuration files from templates'
   fi
 
   # proof.conf file is generated with current hostname as master only
   if [ ! -e "$AF_PREFIX/etc/proof/proof.conf" ] || [ "$Keep" == '-o' ]; then
-    echo 'Generating proof.conf with current master name'
+    pecho 'Generating proof.conf with current master name'
     echo '# Do not mess with this file: it is automatically generated' \
       > "$AF_PREFIX/etc/proof/proof.conf"
     echo "master `hostname -f`" >> "$AF_PREFIX/etc/proof/proof.conf"
   fi
+
+  # Remove template files
+  pecho 'Removing Cheetah configuration templates and backups...'
+  rm -vf "$AF_PREFIX"/etc/proof/*.{tmpl,bak}
 
 }
 
