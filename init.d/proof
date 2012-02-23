@@ -72,8 +72,8 @@ function xpdskel() {
     echo "Can't create working directory $XPREF"
     return 1
   fi
-  chown -R $AF_USER:$AF_GROUP "$XPREF"
-  chmod -R 0755 "$XPREF"
+  chown $AF_USER:$AF_GROUP "$XPREF"
+  chmod 0755 "$XPREF"
 
   # Log directory
   local XLOGDIR=$(dirname "$XLOG")
