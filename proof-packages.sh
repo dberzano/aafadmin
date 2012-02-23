@@ -19,9 +19,38 @@ AliMeta=`readlink -e "$AliMeta"`
 
 # Check if it exists or not
 if [ "$AliMeta" == '' ] ; then
-  echo "$Prog: can't find AliRoot meta package" >&2
+  pecho "$Prog: can't find AliRoot meta package"
   exit 1
 fi
+
+# Colored echo on stderr
+function pecho() {
+  local NewLine=''
+  if [ "$1" == -n ]; then
+    NewLine='-n'
+    shift
+  fi
+  echo -e $NewLine "\033[1m$1\033[m" >&2
+}
+
+# Prints help
+function PrintHelp {
+
+  local Prog
+  Prog=`basename "$0"`
+
+  pecho "$Prog -- by Dario Berzano <dario.berzano@cern.ch>"
+  pecho 'Creates PAR files that enable available AliRoot versions on PROOF.'
+  pecho 'AliRoot dependency file must be up to date.'
+  pecho ''
+  pecho "Usage: $Prog [options]"
+  pecho '      --clean PACKAGE              removes PACKAGE (or "old")'
+  pecho '      --add PACKAGE                adds PACKAGE (or "new")'
+  pecho '      --sync                       removes old and adds new packages'
+  pecho '      --abort                      abort on error'
+  pecho '      --help                       this help screen'
+
+}
 
 # Creates package in a destination directory. Return value: 0=ok, !0=failure
 function MakeAliPar() {
@@ -30,7 +59,7 @@ function MakeAliPar() {
   local DestDir="$2"
   local ParDir="$DestDir/$AliVer"
 
-  echo "Creating parfile $DestDir/$AliVer.par..." >&2
+  pecho "Creating parfile $DestDir/$AliVer.par..."
 
   # Package directory
   mkdir -p "$ParDir"
@@ -120,7 +149,7 @@ EOF
     cd "$RootSandbox"
     root -l -b -q "$RootMacro" > $TmpLog 2>&1
     ExitCode=$?
-    cd -
+    cd - > /dev/null 2>&1
 
     # Remove garbage locks
     find /tmp -name 'proof-package-lock-*af-proof-sandbox*' -exec rm -vf '{}' \;
@@ -151,7 +180,7 @@ function CleanAliPack() {
 
   if [ "$AliPack" == 'old' ] ; then
 
-    echo 'Cleaning obsoleted packages...' >&2
+    pecho 'Cleaning obsoleted packages...'
 
     # Removes obsolete AliRoot packages (packages no longer in dependency file)
     ls -1d "$PackDir/"* | sed -e 's/\.par$//' | sort -u | \
@@ -162,10 +191,10 @@ function CleanAliPack() {
       # Not present? Delete it
       grep -c "^$Pack|" "$AF_DEP_FILE" > /dev/null
       if [ $? != 0 ] ; then
-        echo "Removing obsoleted $Pack"
+        pecho "Removing obsoleted $Pack"
         rm -rvf "$PackDir/$Pack" "$PackDir/$Pack.par"
       else
-        echo "Keeping $Pack"
+        pecho "Keeping $Pack"
       fi
 
     done
@@ -173,13 +202,13 @@ function CleanAliPack() {
   elif [ "$AliPack" == 'all' ] ; then
 
     # Removes all packages
-    echo 'Cleaning all packages...' >&2
+    pecho 'Cleaning all packages...'
     rm -rvf "$PackDir/"*
 
   else
 
     # Removes a single package (not safe, beware)
-    echo "Removing package $AliPack..." >&2
+    pecho "Removing package $AliPack..."
     rm -rvf "$PackDir/$AliPack" "$PackDir/$AliPack.par"
 
   fi
@@ -201,30 +230,30 @@ function AddAliPack() {
 
   if [ "$AliPack" == 'new' ] ; then
 
-    echo 'Installing new packages...'
+    pecho 'Installing new packages...'
 
     # Adds new packages not yet present
     cat "$AF_DEP_FILE" | awk -F \| '{ print $1 }' | \
     while read Pack ; do
 
       if [ -f "$PackDir/$Pack.par" ] && [ -d "$PackDir/$Pack" ] ; then
-        echo "Skipping installed $Pack" >&2
+        pecho "Skipping installed $Pack"
       else
 
         # Installing a new package
-        echo "Installing package $Pack"
+        pecho "Installing package $Pack"
 
         rm -rvf "$PackDir/$Pack"*
         MakeAliPar "$Pack" "$TempDir" && UpAliPar "$TempDir/$Pack.par"
 
         if [ $? != 0 ] ; then
-          echo "Installation of package $Pack failed" >&2
+          pecho "Installation of package $Pack failed"
           rm -rvf "$PackDir/$Pack"*
           echo -n "$Pack " >> $InstalledErr
           if [ "$AbortOnError" == 1 ] ; then
             rm -f $InstalledErr $InstalledOk
-            echo "Temporary directory $TempDir left for inspection." >&2
-            echo 'Aborting.' >&2
+            pecho "Temporary directory $TempDir left for inspection."
+            pecho 'Aborting.'
             return 1
           fi
         else
@@ -240,22 +269,22 @@ function AddAliPack() {
     ListErr=`cat $InstalledErr`
     rm -f $InstalledErr $InstalledOk
 
-    [ "$ListOk" != '' ] && echo "New packages installed correctly: $ListOk"
-    [ "$ListErr" != '' ] && echo "Installation failed for: $ListErr"
+    [ "$ListOk" != '' ] && pecho "New packages installed correctly: $ListOk"
+    [ "$ListErr" != '' ] && pecho "Installation failed for: $ListErr"
 
   else
 
     # Adds a single package
-    echo "Installing package $AliPack"
+    pecho "Installing package $AliPack"
     rm -rvf "$PackDir/$AliPack"*
     MakeAliPar "$AliPack" "$TempDir" && UpAliPar "$TempDir/$AliPack.par"
 
     if [ $? != 0 ] ; then
-      echo "Installation of package $AliPack failed" >&2
+      pecho "Installation of package $AliPack failed"
       rm -rvf "$PackDir/$AliPack"*
       if [ "$AbortOnError" == 1 ] ; then
-        echo "Temporary directory $TempDir left for inspection." >&2
-        echo 'Aborting.' >&2
+        pecho "Temporary directory $TempDir left for inspection."
+        pecho 'Aborting.'
         return 1
       fi
     fi
@@ -272,7 +301,7 @@ function AddAliPack() {
 
 Prog=$(basename "$0")
 
-Args=$(getopt -o '' --long 'clean:,add:,abort,sync' -n"$Prog" -- "$@")
+Args=$(getopt -o '' --long 'clean:,add:,abort,sync,help' -n"$Prog" -- "$@")
 [ $? != 0 ] && exit 1
 
 eval set -- "$Args"
@@ -297,13 +326,18 @@ while [ "$1" != "--" ] ; do
       shift 1
     ;;
 
+    --help)
+      PrintHelp
+      exit 1
+    ;;
+
     --abort)
       export AbortOnError=1
     ;;
 
     *)
       # Should never happen
-      echo "Skipping unknown option: $1"
+      pecho "Skipping unknown option: $1"
       shift 1
     ;;
 
@@ -312,6 +346,11 @@ while [ "$1" != "--" ] ; do
 done
 
 shift # --
+
+# Help screen if nothing to do
+if [ "$AddPackage" == '' ] && [ "$CleanPackage" == '' ] ; then
+  PrintHelp
+fi
 
 #
 # First action is to clean packages
@@ -322,7 +361,7 @@ if [ "$CleanPackage" != '' ] ; then
 fi
 
 #
-# Then we add new ones
+# Then we add the new ones
 #
 
 if [ "$AddPackage" != '' ] ; then
