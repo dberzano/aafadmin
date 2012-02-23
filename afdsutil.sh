@@ -8,4 +8,4 @@ source /etc/aafrc || exit 1
 source "$AF_PREFIX/etc/env-alice.sh" --root current || exit 1
 source "$AF_PREFIX/etc/af-alien-lib.sh"
 AutoAuth
-root -l -b "$AF_PREFIX/bin/afdsutil.C+"
+root -l -b "$AF_PREFIX/bin/afdsutil.C+" "$@"
