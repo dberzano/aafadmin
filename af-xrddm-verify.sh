@@ -15,14 +15,7 @@
 # Source automatic AliEn stuff
 source /etc/aafrc || exit 1
 
-# Temporary workaroud until we fix afdsmgrd's setuid BIG problem
-# IT REALLY SHOULD BE FIXED **NOW** AND I MEAN IT
-if [ `whoami` == 'root' ]; then
-  exec su $AF_USER -c "$0 $@"
-  exit 1 # not reached
-fi
-
-# Source environment for xrddm and ROOT
+# Source environment for xrddm and ROOT (AliEn is included)
 source "$AF_PREFIX/etc/env-alice.sh" --root current || exit 1
 
 # Exit on error
@@ -95,12 +88,12 @@ if [ "$Download" == 1 ]; then
   mkdir -p $(dirname "$PosixPath") || Abort 'mkdir'
 
   # Copy file using xrddm, token is done automatically
-  #"$AF_PREFIX"/bin/xrddm-wrapper.sh -a "$AlienPath" "$PosixPath"
   "$AF_PREFIX"/bin/xrddm -a "$AlienPath" "$PosixPath"
   if [ $? != 0 ]; then
     DeepRm "$PosixPath"
     Abort 'xrddm-error' # we can't distinguish if token/xrdcp/zip error :(
   fi
+  chmod 0644 "$PosixPath"
 
 fi
 
