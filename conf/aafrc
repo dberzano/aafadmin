@@ -26,7 +26,7 @@ export AF_ROOT_PROOF="/opt/exp_software/alice/packages/VO_ALICE/ROOT/v5-30-06/v5
 export AF_PROOF_EXPORT="$AF_PREFIX/var/proof/export"
 
 # Datasets directory
-export AF_DATASETS="$AF_PREFIX/var/proof/datasets_new"
+export AF_DATASETS="$AF_PREFIX/var/proof/datasets"
 
 # Destination of the files to be deployed to each machine (with Puppet or
 # whatever you want). It is a rsync destination: it might or may not include
@@ -38,3 +38,13 @@ export AF_SHARED_DATA='/storage'
 
 # AliEn user associated to the host certificate of PROOF master
 export AF_ALIEN_USER='proof'
+
+# Custom afdsmgrd (if omitted, use PROOF ROOT's one)
+export AF_CUSTOM_AFDSMGRD='/home/sysman/devel/afdsmgrd/production'
+
+# Variables for afdsmgrd
+export AF_AFDSMGRD_SLEEPSECS=20
+export AF_AFDSMGRD_SCANDSEVERYLOOPS=100
+export AF_AFDSMGRD_PARALLELXFRS=25
+export AF_AFDSMGRD_CMDTIMEOUTSECS=2200
+export AF_AFDSMGRD_CORRUPTAFTERFAILS=10
