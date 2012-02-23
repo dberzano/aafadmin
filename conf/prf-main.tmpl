@@ -65,8 +65,13 @@ xpd.resource static $TPL_ETC/proof.conf
 ##  xpd.role worker
 ## fi
 
-# This line is special for this configuration: master is also a worker
-xpd.role any
+# Who is the master, who is a worker?
+# In alternative you can use xpd.role any if master is also a worker
+if $TPL_MASTER_SHORT*
+  xpd.role master
+else
+  xpd.role worker
+fi
 
 # ALICE group belongings are read from the following file. This option must be
 # specified twice for very good reasons
@@ -89,15 +94,9 @@ xpd.putenv AF_DEP_FILE=$AF_DEP_FILE
 # To me it is unclear why these options go here - aren't they xrootd-specific?
 xpd.poolurl root://$AF_MASTER/
 xpd.namespace $AF_PROOF_EXPORT
-xpd.putrc Path.Localroot $AF_PROOF_EXPORT
-##xpd.namespace /stor/alipool/alice
-##xpd.putrc Path.Localroot /stor/alipool/alice
-##xpd.namespace /storage/AliNameSpace/xrdnamespace
-##xpd.putrc Path.Localroot /storage/AliNameSpace/xrdnamespace
+#xpd.putrc Path.Localroot $AF_PROOF_EXPORT
 xpd.putrc ProofServ.DataDir $AF_PROOF_EXPORT/aaf_data/
 xpd.datadir $AF_PROOF_EXPORT/aaf_data/ aWM
-##xpd.putrc ProofServ.DataDir /storage/AliNameSpace/xrdnamespace/aaf_data/
-##xpd.datadir /storage/AliNameSpace/xrdnamespace/aaf_data/ aWM
 
 ### Location of merged files (create th new path is not existing)
 ##xpd.putrc Proof.OutputFile: root://alicecaf.cern.ch:11094//scratch/<group>/<user>/<file>?remote=1                                                                                                                                

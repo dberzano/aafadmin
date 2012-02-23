@@ -3,13 +3,14 @@
 
 xpd.datasetsrc file url:$AF_DATASETS mss:$AF_SHARED_DATA opt:Cq:Av:Ar: rw=1
 dsmgrd.urlregex alien://(.*)\$ $AF_SHARED_DATA\$1
-dsmgrd.sleepsecs 30
-dsmgrd.scandseveryloops 10
-dsmgrd.parallelxfrs 30
+dsmgrd.sleepsecs $AF_AFDSMGRD_SLEEPSECS
+dsmgrd.scandseveryloops $AF_AFDSMGRD_SCANDSEVERYLOOPS
+dsmgrd.parallelxfrs $AF_AFDSMGRD_PARALLELXFRS
 dsmgrd.stagecmd $AF_PREFIX/bin/af-xrddm-verify.sh "\$URLTOSTAGE" "\$TREENAME"
-dsmgrd.cmdtimeoutsecs 1800
-dsmgrd.corruptafterfails 10
+dsmgrd.cmdtimeoutsecs $AF_AFDSMGRD_CMDTIMEOUTSECS
+dsmgrd.corruptafterfails $AF_AFDSMGRD_CORRUPTAFTERFAILS
 
-dsmgrd.notifyplugin $TPL_DIR_LIB/libafdsmgrd_notify_apmon.so
-#dsmgrd.apmonurl apmon://alibox.to.infn.it
-#dsmgrd.apmonprefix PROOF::TAF::STORAGE
+## No notification for the moment
+##dsmgrd.notifyplugin $TPL_DIR_LIB/libafdsmgrd_notify_apmon.so
+##dsmgrd.apmonurl apmon://alibox.to.infn.it
+###dsmgrd.apmonprefix PROOF::TAF::STORAGE
