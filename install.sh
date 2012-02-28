@@ -42,7 +42,6 @@ FilesEtcProof=(
   'conf/afdsmgrd.tmpl'
   'conf/afdsmgrd_env.tmpl'
   'conf/XrdSecgsiGMAPFunLDAP.cf'
-  'conf/grid-mapfile'
   'conf/groups.alice.cf'
 )
 
@@ -252,6 +251,10 @@ function Main {
       export TPL_VAR="$AF_PREFIX/var/proof"
       export TPL_ETC="$AF_PREFIX/etc/proof"
 
+      export TPL_GRID_SECURITY='/etc/grid-security'
+      export TPL_PACKAGES="$TPL_VAR/proofbox/$AF_USER/packages"
+      export TPL_PORT='1093'
+
       # ROOT versions available, separated by a pipe
       export TPL_ROOT_VER=$(
         cd "$TPL_ROOT_PREFIX" ;
@@ -299,6 +302,16 @@ function Main {
       Copy -o "var/proof" "$Afdsutil"
 
       exit $?
+    ) || exit $?
+
+    # Generates grid-security file to map local AF user to machine's subject
+    pecho 'Generating grid-mapfile from current host certificate...'
+    (
+      export HostSubject=$( openssl x509 -in /etc/grid-security/hostcert.pem \
+      -noout -subject | sed -e 's/subject= \+//' )
+      [ "$HostSubject" == '' ] && exit 1
+      echo "Certificate subject is: $HostSubject"
+      echo \"$HostSubject\" $AF_USER > "$AF_PREFIX"/etc/proof/grid-mapfile
     ) || exit $?
 
   else

@@ -37,11 +37,11 @@ function Main() {
   echo 'Staging needed files into a temporary directory:' >&2
   for F in "${Files[@]}" ; do
     mkdir -p `dirname "$TmpDir/$F"`
-    cp -prv "$AF_PREFIX/$F" "$TmpDir/$F"
+    cp -pr "$AF_PREFIX/$F" "$TmpDir/$F"
   done
 
   # Add global configuration file there
-  cp -pv /etc/aafrc "$TmpDir/etc/"
+  cp -p /etc/aafrc "$TmpDir/etc/"
 
   # Send files to remote host via rsync
   echo 'Sending files via rsync:' >&2

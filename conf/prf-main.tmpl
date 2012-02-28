@@ -14,43 +14,15 @@
 # template instead of changing it.
 
 #
-# Global variables
-#
-
-## Unused
-## set gRootsysDbg = /opt/aaf/root_dbg
-
-# Globus directory (for certificates, etc.)
-set gGlobusPath = $AF_ALIEN_DIR/globus
-
-# Certificate and key for this machine are in this directory
-set gGridSecurityPath = /etc/grid-security
-
-# Used for authentication: current hostname
-set gXrdSecGSISRVNAMES = $AF_MASTER
-
-# Global PROOF packages directory
-set gPackageDir = $AF_PREFIX/var/proof/proofbox/$AF_USER/packages
-
-# Maximum concurrent sessions
-set gProofMaxSessions = 10
-
-# PROOF port (default: 1093)
-set gPort = 1093
-
-# Memory limits, in KiB (resident and virtual)
-set gMemoryLimitRes = 100000 
-set gMemoryLimitVirt = 100000
-
-#
 # Global configuration directives
 #
 
 # Administration path, that contains sockets
 all.adminpath $TPL_VAR/admin
 
-# The PROOF port (see Global variables)
-xpd.port \$gPort
+# The PROOF port (see Global variables): it is the only port opened, and it
+# serves the rootd (not xrootd) protocol too
+xpd.port $TPL_PORT
 
 # The PROOF resources locator: static is the only one available, it reads the
 # configuration from the given file. This configuration might be however
@@ -127,7 +99,7 @@ sec.protparm gsi -gridmap:$TPL_ETC/grid-mapfile
 # Globus configuration for this machine. The dlgpxy:2 means that *your* proxy
 # creates another delegated proxy on each PROOF client. Very useful if, i.e.,
 # you want to access alien:// files from each machine running PROOF workers
-xpd.sec.protocol gsi -crl:0 -dlgpxy:2 -certdir:\$gGlobusPath/share/certificates -d:0 -cert:\$gGridSecurityPath/hostcert.pem -key:\$gGridSecurityPath/hostkey.pem -exppxy:<workdir>/<user>/.creds/x509_u<uid>
+xpd.sec.protocol gsi -crl:0 -dlgpxy:2 -certdir:$AF_ALIEN_DIR/globus/share/certificates -d:0 -cert:$TPL_GRID_SECURITY/hostcert.pem -key:$TPL_GRID_SECURITY/hostkey.pem -exppxy:<workdir>/<user>/.creds/x509_u<uid>
 
 # Where to save delegations
 xpd.putenv XrdSecGSIUSERPROXY=<workdir>/<user>/.creds/x509_u<uid>
@@ -136,16 +108,16 @@ xpd.putenv XrdSecSSLUSERCERT=<workdir>/<user>/.creds/x509_u<uid>
 xpd.putenv XrdSecSSLUSERKEY=<workdir>/<user>/.creds/x509_u<uid>
 
 # Directory of valid CAs (used for standard SSL)
-xpd.putenv XrdSecSSLCADIR=\$gGlobusPath/share/certificates
+xpd.putenv XrdSecSSLCADIR=$AF_ALIEN_DIR/globus/share/certificates
 
 # Important for AliEn, elsewhere TGrid::Connect() crashes
 xpd.putenv GCLIENT_SERVER_LIST=pcapiserv08.cern.ch:10000|
 
 # Directory of valid CAs (used for Globus extensions to SSL)
-xpd.putenv XrdSecGSICADIR=\$gGlobusPath/share/certificates
+xpd.putenv XrdSecGSICADIR=$AF_ALIEN_DIR/globus/share/certificates
 
 # See corresponding global variable above
-xpd.putenv XrdSecGSISRVNAMES=\$gXrdSecGSISRVNAMES
+xpd.putenv XrdSecGSISRVNAMES=$AF_MASTER
 
 # Same thing as dlgpxy switch above
 xpd.putrc XSec.GSI.DelegProxy 2
@@ -156,20 +128,31 @@ xpd.putenv alien_API_USER=<user>
 # Packetizer obscure (to me) option...
 #xpd.putrc Packetizer.MaxWorkersPerNode 1000
 
-# Maximum number of PROOF sessions for the scheduler
-xpd.schedparam mxsess:\$gProofMaxSessions
+# See http://root.cern.ch/drupal/content/configuration-reference-guide#schedparam
+xpd.schedparam mxsess:-1
 ##wmx:\$gProofMaxWorkersPerNode
 
 # Quotas
 xpd.putrc ProofServ.UserQuotas maxquerykept=5
 
 # Packages
-xpd.putrc Proof.GlobalPackageDirs \$gPackageDir
-xpd.exportpath \$gPackageDir
+xpd.putrc Proof.GlobalPackageDirs $TPL_PACKAGES
+xpd.exportpath $TPL_PACKAGES
 
 # Memory limits in MiB (by default high number, meaning no limits)
-xpd.putenv PROOF_RESMEMMAX=\$gMemoryLimitRes
-xpd.putenv PROOF_VIRTMEMMAX=\$gMemoryLimitVirt
+xpd.putenv PROOF_RESMEMMAX=$AF_PROOF_LIMIT_RSS_KB
+xpd.putenv PROOF_VIRTMEMMAX=$AF_PROOF_LIMIT_VIRT_KB
+
+# If we use xrootd, we should, for security reasons, block rootd
+#xpd.rootd deny
+
+# We don't use xrootd: use rootd to transfer merged files between workers and
+# between master and client. This is a little bit insecure... PROOF's default
+# is the same string without <user>, but we need it elsewhere it does not work:
+# even if there is no authentication, a recognized user should be presented. The
+# LOCALDATASERVER variable is used by the PROOF merger
+xpd.rootd allow mode:ro auth:none
+xpd.putenv LOCALDATASERVER=rootd://<user>@<host>:$TPL_PORT/
 
 ##
 ## Dataset manager configuration

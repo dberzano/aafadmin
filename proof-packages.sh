@@ -337,7 +337,7 @@ while [ "$1" != "--" ] ; do
 
     *)
       # Should never happen
-      pecho "Skipping unknown option: $1"
+      pecho "Ignoring unknown option: $1"
       shift 1
     ;;
 
