@@ -65,6 +65,9 @@ if [ -e "$PosixPath" ] ; then
   if [ "$Ext" == 'zip' ]; then
     # Exit code for zip -T failure is 8
     zip -T "$PosixPath" && Download=0 || DeepRm "$PosixPath"
+  else
+    # File is not a zipfile: do not re-download it
+    Download=0
   fi
 
 fi
@@ -97,10 +100,17 @@ if [ "$Download" == 1 ]; then
 
 fi
 
+# Choose proper verification macro (standard ROOT or custom afdsmgrd)
+if [ "$AF_CUSTOM_AFDSMGRD" == '' ]; then
+  VerifyMacro="$ROOTSYS/etc/proof/afdsmgrd-macros/Verify.C"
+else
+  VerifyMacro="$AF_CUSTOM_AFDSMGRD/libexec/afdsmgrd-macros/Verify.C"
+fi
+
 # Now, re-assemble the anchor and check the file with ROOT
 TempOut=$(mktemp /tmp/af-xrddm-verify-root.XXXXX)
 root.exe -b -q \
-  "$ROOTSYS/etc/proof/afdsmgrd-macros/Verify.C"'("file://'$PosixPath\#$Anchor'", "'$Tree'")' 2>&1 | tee -a $TempOut
+  "$VerifyMacro"'("file://'$PosixPath\#$Anchor'", "'$Tree'")' 2>&1 | tee -a $TempOut
 
 # Decide whether to remove the file or not: if integrity check fails, file
 # should be removed to save space
