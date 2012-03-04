@@ -20,7 +20,7 @@ export AF_GROUP=wheel
 
 # ROOT directory of current PROOF version (must be full and explicit, and not
 # necessarily a ROOT coming from Packman
-export AF_ROOT_PROOF="/opt/exp_software/alice/packages/VO_ALICE/ROOT/v5-30-06/v5-30-06"
+export AF_ROOT_PROOF="/opt/exp_software/alice/packages/VO_ALICE/ROOT/v5-30-06-1/v5-30-06-1"
 
 # Directory exported via internal PROOF's Xrootd
 export AF_PROOF_EXPORT="$AF_PREFIX/var/proof/export"
@@ -42,12 +42,19 @@ export AF_ALIEN_USER='proof'
 # Custom afdsmgrd (if omitted, use PROOF ROOT's one)
 export AF_CUSTOM_AFDSMGRD='/home/sysman/devel/afdsmgrd/production'
 
+# MonALISA settings
+export AF_MONA_HOST='193.206.184.58:8884'
+export AF_MONA_PREFIX='PROOF::TAF::STORAGE'
+
+# Arbitrary status message to show in MonALISA
+export AF_STATUS_MSG='Warming up!'
+
 # Variables for afdsmgrd
-export AF_AFDSMGRD_SLEEPSECS=20
-export AF_AFDSMGRD_SCANDSEVERYLOOPS=100
-export AF_AFDSMGRD_PARALLELXFRS=25
-export AF_AFDSMGRD_CMDTIMEOUTSECS=2200
-export AF_AFDSMGRD_CORRUPTAFTERFAILS=10
+export AF_AFDSMGRD_SLEEPSECS=15
+export AF_AFDSMGRD_SCANDSEVERYLOOPS=25
+export AF_AFDSMGRD_PARALLELXFRS=45
+export AF_AFDSMGRD_CMDTIMEOUTSECS=1000
+export AF_AFDSMGRD_CORRUPTAFTERFAILS=3
 
 # PROOF memory limits (on RSS and virtual)
 export AF_PROOF_LIMIT_RSS_KB=100000 
