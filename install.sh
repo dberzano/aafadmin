@@ -22,6 +22,7 @@ Skel=(
   'etc/init.d'
   'var/run'
   'var/proof'
+  'lib/perl-apmon'
 )
 
 # Files to copy in bin
@@ -34,6 +35,7 @@ FilesBin=(
   'af-xrddm-verify.sh'
   'afdsutil.C'
   'proof-packages.sh'
+  'af-monalisa.pl'
 )
 
 # Files to copy in etc/proof (don't overwrite)
@@ -54,6 +56,7 @@ FilesEtcInitd=(
 FilesEtc=(
   'env-alice.sh'
   'af-alien-lib.sh'
+  'conf/monalisa-conf.tmpl'
 )
 
 # xrddm source and destination
@@ -210,6 +213,10 @@ function Main {
   Copy -o    'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
   Copy -o    'etc' "${FilesEtc[@]}" || exit $?
 
+  # Perl ApMon library
+  pecho 'Installing Perl ApMon library...'
+  cp -vpr 'perl-apmon/' "$AF_PREFIX/lib/" || exit $?
+
   # Create dependencies immediately
   pecho 'Creating software dependencies...'
   "$AF_PREFIX"/bin/create-deps.sh
@@ -326,9 +333,20 @@ function Main {
     echo "master `hostname -f`" >> "$AF_PREFIX/etc/proof/proof.conf"
   fi
 
+  # Generates MonALISA configuration
+  pecho 'Generating MonALISA configuration...'
+  (
+    cd "$AF_PREFIX/etc" || exit 1
+    cheetah fill --env --oext pl monalisa-conf.tmpl || exit 1
+
+    echo "* * * * * $AF_USER \"$AF_PREFIX/bin/af-monalisa.pl\"" \
+      "> /dev/null 2> /dev/null" > "$AF_PREFIX"/etc/af-monalisa.cron
+
+  ) || exit $?
+
   # Remove template files
   pecho 'Removing Cheetah configuration templates and backups...'
-  rm -vf "$AF_PREFIX"/etc/proof/*.{tmpl,bak}
+  rm -vf "$AF_PREFIX"/etc/proof/*.{tmpl,bak} "$AF_PREFIX"/etc/*.{tmpl,bak}
 
 }
 

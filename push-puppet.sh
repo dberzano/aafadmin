@@ -17,11 +17,19 @@ fi
 # Files to copy (wrt/ AF_PREFIX)
 Files=(
   '/etc/proof/XrdSecgsiGMAPFunLDAP.cf'
-#  '/etc/proof/proof.conf'
+  '/etc/af-monalisa.cron'
+  '/etc/monalisa-conf.pl'
   '/etc/proof/grid-mapfile'
   '/etc/proof/groups.alice.cf'
   '/etc/proof/prf-main.cf'
   '/etc/init.d/proof'
+  '/bin/af-monalisa.pl'
+  '/lib/perl-apmon/ApMon/ConfigLoader.pm'
+  '/lib/perl-apmon/ApMon/ProcInfo.pm'
+  '/lib/perl-apmon/ApMon/XDRUtils.pm'
+  '/lib/perl-apmon/ApMon/BgMonitor.pm'
+  '/lib/perl-apmon/ApMon/Common.pm'
+  '/lib/perl-apmon/ApMon.pm'
   "/var/proof/proofbox/$AF_USER/packages"
 )
 
