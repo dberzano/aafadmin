@@ -271,7 +271,7 @@ function Main {
         done)
 
       cd "$AF_PREFIX"/etc/proof || exit 1
-      cheetah fill --env --oext cf prf-main.tmpl
+      cheetah fill --env --nobackup --oext cf prf-main.tmpl
       exit $?
     ) || exit $?
 
@@ -298,8 +298,8 @@ function Main {
 
       cd "$AF_PREFIX"/etc/proof || exit 1
 
-      cheetah fill --env --oext conf afdsmgrd.tmpl    # config
-      cheetah fill --env --oext sh afdsmgrd_env.tmpl  # sysconfig
+      cheetah fill --env --nobackup --oext conf afdsmgrd.tmpl    # config
+      cheetah fill --env --nobackup --oext sh afdsmgrd_env.tmpl  # sysconfig
 
       # Linking afdsmgrd startup script
       pecho 'Linking startup script of afdsmgrd'
@@ -337,7 +337,7 @@ function Main {
   pecho 'Generating MonALISA configuration...'
   (
     cd "$AF_PREFIX/etc" || exit 1
-    cheetah fill --env --oext pl monalisa-conf.tmpl || exit 1
+    cheetah fill --env --nobackup --oext pl monalisa-conf.tmpl || exit 1
 
     echo "* * * * * $AF_USER \"$AF_PREFIX/bin/af-monalisa.pl\"" \
       "> /dev/null 2> /dev/null" > "$AF_PREFIX"/etc/af-monalisa.cron
