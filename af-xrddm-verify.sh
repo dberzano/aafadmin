@@ -107,8 +107,9 @@ else
   VerifyMacro="$AF_CUSTOM_AFDSMGRD/libexec/afdsmgrd-macros/Verify.C"
 fi
 
-# Now, re-assemble the anchor and check the file with ROOT
+# Now, re-assemble the anchor and check the file with ROOT; ROOT history is off
 TempOut=$(mktemp /tmp/af-xrddm-verify-root.XXXXX)
+export ROOT_HIST=0
 root.exe -b -q \
   "$VerifyMacro"'("file://'$PosixPath\#$Anchor'", "'$Tree'")' 2>&1 | tee -a $TempOut
 
