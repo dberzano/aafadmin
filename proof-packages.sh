@@ -17,6 +17,9 @@ AliMeta=`ls -rtd1 "$AF_PACK_DIR/VO_ALICE/aaf-aliroot/"*/`
 AliMeta="${AliMeta}/PROOF-INF/VO_ALICE@AliRoot"
 AliMeta=`readlink -e "$AliMeta"`
 
+# Disable ROOT history (this is a ROOT variable)
+export ROOT_HIST=0
+
 # Check if it exists or not
 if [ "$AliMeta" == '' ] ; then
   pecho "$Prog: can't find AliRoot meta package"
@@ -48,6 +51,7 @@ function PrintHelp {
   pecho '      --add PACKAGE                adds PACKAGE (or "new")'
   pecho '      --sync                       removes old and adds new packages'
   pecho '      --abort                      abort on error'
+  pecho '      --no-token                   do not check for token/proxy'
   pecho '      --help                       this help screen'
 
 }
@@ -320,6 +324,11 @@ while [ "$1" != "--" ] ; do
       shift 2
     ;;
 
+    --no-token)
+      NoToken=1
+      shift 2
+    ;;
+
     --sync)
       CleanPackage='old'
       AddPackage='new'
@@ -350,6 +359,16 @@ shift # --
 # Help screen if nothing to do
 if [ "$AddPackage" == '' ] && [ "$CleanPackage" == '' ] ; then
   PrintHelp
+  exit 1
+fi
+
+#
+# Create token, unless told to do otherwise
+#
+
+if [ "$NoToken" != 1 ] ; then
+  ( source "$AF_PREFIX/etc/env-alice.sh" --alien && \
+    source "$AF_PREFIX/etc/af-alien-lib.sh" && AutoAuth )
 fi
 
 #
