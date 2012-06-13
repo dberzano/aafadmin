@@ -22,7 +22,7 @@ all.adminpath $TPL_VAR/admin
 
 # The PROOF port (see Global variables): it is the only port opened, and it
 # serves the rootd (not xrootd) protocol too
-xpd.port $TPL_PORT
+xpd.port $TPL_PROOFPORT
 
 # The PROOF resources locator: static is the only one available, it reads the
 # configuration from the given file. This configuration might be however
@@ -144,15 +144,19 @@ xpd.putenv PROOF_RESMEMMAX=$AF_PROOF_LIMIT_RSS_KB
 xpd.putenv PROOF_VIRTMEMMAX=$AF_PROOF_LIMIT_VIRT_KB
 
 # If we use xrootd, we should, for security reasons, block rootd
-#xpd.rootd deny
+xpd.rootd deny
 
-# We don't use xrootd: use rootd to transfer merged files between workers and
-# between master and client. This is a little bit insecure... PROOF's default
-# is the same string without <user>, but we need it elsewhere it does not work:
-# even if there is no authentication, a recognized user should be presented. The
-# LOCALDATASERVER variable is used by the PROOF merger
-xpd.rootd allow mode:ro auth:none
-xpd.putenv LOCALDATASERVER=rootd://<user>@<host>:$TPL_PORT/
+## We don't use xrootd: use rootd to transfer merged files between workers and
+## between master and client. This is a little bit insecure... PROOF's default
+## is the same string without <user>, but we need it elsewhere it does not work:
+## even if there is no authentication, a recognized user should be presented. The
+## LOCALDATASERVER variable is used by the PROOF merger
+##xpd.rootd allow mode:ro auth:none
+##xpd.putenv LOCALDATASERVER=rootd://<user>@<host>:$TPL_PROOFPORT/
+
+# Using xrootd on each server for data transfer (i.e., when merging files and
+# not streamed data)
+xpd.putenv LOCALDATASERVER=root://<user>@<host>:$TPL_XRDPORT/
 
 ##
 ## Dataset manager configuration

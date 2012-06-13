@@ -19,6 +19,7 @@ ErrHelp=42
 Skel=(
   'bin'
   'etc/proof'
+  'etc/xrootd'
   'etc/init.d'
   'var/run'
   'var/proof'
@@ -38,7 +39,7 @@ FilesBin=(
   'af-monalisa.pl'
 )
 
-# Files to copy in etc/proof (don't overwrite)
+# Files to copy in etc/proof
 FilesEtcProof=(
   'conf/prf-main.tmpl'
   'conf/afdsmgrd.tmpl'
@@ -47,9 +48,10 @@ FilesEtcProof=(
   'conf/groups.alice.cf'
 )
 
-# Files to copy in etc/proof (don't overwrite)
+# Files to copy in etc/init.d
 FilesEtcInitd=(
   'init.d/proof'
+  'init.d/xrootd'
 )
 
 # Files to copy in etc
@@ -57,6 +59,12 @@ FilesEtc=(
   'env-alice.sh'
   'af-alien-lib.sh'
   'conf/monalisa-conf.tmpl'
+)
+
+# Files to copy in etc/xrootd
+FilesEtcXrootd=(
+  'conf/xrootd.cf'
+  'conf/xrootd-startup.cf'
 )
 
 # xrddm source and destination
@@ -207,11 +215,11 @@ function Main {
   echo ''
 
   # Install files (-o: overwrite, -k: keep)
-  Copy -o    'bin' "${FilesBin[@]}" || exit $?
-  #Copy $Keep 'etc/proof' "${FilesEtcProof[@]}" || exit $?
-  Copy -o    'etc/proof' "${FilesEtcProof[@]}" || exit $?
-  Copy -o    'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
-  Copy -o    'etc' "${FilesEtc[@]}" || exit $?
+  Copy -o 'bin' "${FilesBin[@]}" || exit $?
+  Copy -o 'etc/proof' "${FilesEtcProof[@]}" || exit $?
+  Copy -o 'etc/xrootd' "${FilesEtcXrootd[@]}" || exit $?
+  Copy -o 'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
+  Copy -o 'etc' "${FilesEtc[@]}" || exit $?
 
   # Perl ApMon library
   pecho 'Installing Perl ApMon library...'
@@ -260,7 +268,8 @@ function Main {
 
       export TPL_GRID_SECURITY='/etc/grid-security'
       export TPL_PACKAGES="$TPL_VAR/proofbox/$AF_USER/packages"
-      export TPL_PORT='1093'
+      export TPL_PROOFPORT='1093'
+      export TPL_XRDPORT='1094'
 
       # ROOT versions available, separated by a pipe
       export TPL_ROOT_VER=$(

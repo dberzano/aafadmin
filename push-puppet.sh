@@ -18,11 +18,16 @@ fi
 Files=(
   '/etc/proof/XrdSecgsiGMAPFunLDAP.cf'
   '/etc/af-monalisa.cron'
+  '/etc/aliroot_deps.conf'
+  '/etc/env-alice.sh'
   '/etc/monalisa-conf.pl'
   '/etc/proof/grid-mapfile'
   '/etc/proof/groups.alice.cf'
   '/etc/proof/prf-main.cf'
+  '/etc/xrootd/xrootd.cf'
+  '/etc/xrootd/xrootd-startup.cf'
   '/etc/init.d/proof'
+  '/etc/init.d/xrootd'
   '/bin/af-monalisa.pl'
   '/lib/perl-apmon/ApMon/ConfigLoader.pm'
   '/lib/perl-apmon/ApMon/ProcInfo.pm'
@@ -51,9 +56,15 @@ function Main() {
   # Add global configuration file there
   cp -p /etc/aafrc "$TmpDir/etc/"
 
-  # Send files to remote host via rsync
+  # TODO: see permissions and --delete!
+
+  # Send files to remote Puppet host via rsync
   echo 'Sending files via rsync:' >&2
   rsync -vrlt --delete "$TmpDir/" "$AF_DEPLOY_DEST"
+
+  # Send files to xrootd server via rsync (TODO)
+  echo 'Sending files to xrootd server via rsync:' >&2
+  rsync -av "$TmpDir/" root@alice-srv-11.to.infn.it:/opt/aaf
 
   # Clean up
   rm -rf "$TmpDir"
