@@ -46,6 +46,12 @@ export XPREF="$AF_PREFIX/var/proof"
 export LD_LIBRARY_PATH="$ROOTSYS/lib:$XRDAPI/lib:$LD_LIBRARY_PATH"
 export PATH="$ROOTSYS/bin:$XRDAPI/bin:$PATH"
 
+# Lock file
+export LockSubsys='/var/lock/subsys/proof'
+
+# cron.d check file
+export CrondRestart='/etc/cron.d/proof-resuscitate'
+
 # No binary, no party
 if [ ! -e "$XPDBIN" ]; then
   echo "Can't guess xproofd path, aborting"
@@ -145,6 +151,9 @@ function xpdstatus() {
   if [ "$PID" != "" ]; then
     echo "PROOF (xproofd) is running with PID $PID"
     return 0
+  elif [ -e $LockSubsys ]; then
+    echo "PROOF (xproofd) is not running, but lockfile present (crashed?)"
+    return 2
   else
     echo "PROOF (xproofd) is not running"
     return 1
@@ -177,6 +186,10 @@ function xpdstart() {
       return 1
     else
       echo "xproofd started with PID $PID"
+      # Create machinery to automatically bring PROOF up if it crashed
+      touch $LockSubsys
+      echo '* * * * * root /sbin/service proof restart-if-down' \
+        '> /dev/null 2> /dev/null' > $CrondRestart
     fi
   else
     echo "Not starting: xproofd already running with PID $PID"
@@ -192,7 +205,11 @@ function xpdstop() {
 
   # Check if PROOF is running
   if [ "$PID" == "" ]; then
-    echo "Not stopping: xproofd not running"
+    if [ -e $LockSubsys ]; then
+      echo "Not stopping: xproofd not running, but abnormally terminated"
+    else
+      echo "Not stopping: xproofd not running"
+    fi
   else
     echo -n "Stopping xproofd (wait max ${STOPTIMEOUT}s)..."
     kill -15 $PID
@@ -211,6 +228,8 @@ function xpdstop() {
       kill -9 $PID 2> /dev/null
       echo "forced termination"
     fi
+    rm -f $LockSubsys
+    rm -f $CrondRestart
   fi
 
   # Kills proofserv.exe
@@ -218,6 +237,32 @@ function xpdstop() {
   xpdkillwrk
   echo "done"
 
+  return 0
+}
+
+# Resuscitates xproofd if it crashed. If abnormally terminated the /var/lock/
+# subsys/proof file exists, but the daemon is not running. Function normally
+# invoked by crond
+function xpdresuscitate() {
+  local Ret
+  if [ -e $LockSubsys ]; then
+    echo "Lockfile $LockSubsys present"
+    xpdstatus
+    if [ $? != 0 ]; then
+      xpdstart
+      Ret=$?
+      if [ $Ret == 0 ]; then
+        logger -t proof-resuscitate 'PROOF was down and restarted successfully'
+        return 0
+      else
+        logger -t proof-resuscitate 'PROOF was down but restart failed'
+        return $Ret
+      fi
+    fi
+    return $?
+  fi
+  echo "Lockfile $LockSubsys is not present"
+  xpdstatus
   return 0
 }
 
@@ -246,8 +291,12 @@ case "$COMMAND" in
     xpdstart
   ;;
 
+  restart-if-down)
+    xpdresuscitate
+  ;;
+
   *)
-    echo "Usage: $0 {start|stop|status|restart}"
+    echo "Usage: $0 {start|stop|status|restart|restart-if-down}"
   ;;
 
 esac
