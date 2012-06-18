@@ -52,6 +52,12 @@ export LockSubsys='/var/lock/subsys/proof'
 # cron.d check file
 export CrondRestart='/etc/cron.d/proof-resuscitate'
 
+# Maximum number of opened files for group AF_USERS_GROUP
+export ProofMaxFiles=65500
+
+# Limits file: *must* end with .conf!
+export ProofUlimit='/etc/security/limits.d/proof.conf'
+
 # No binary, no party
 if [ ! -e "$XPDBIN" ]; then
   echo "Can't guess xproofd path, aborting"
@@ -175,6 +181,11 @@ function xpdstart() {
 
     # Kills all the stale PROOF workers
     xpdkillwrk
+
+    # Sets ulimits for PROOF
+    echo "* - nofile $ProofMaxFiles" > $ProofUlimit
+    #echo "@$AF_USERS_GROUP soft nofile $ProofMaxFiles" >  $ProofUlimit
+    #echo "@$AF_USERS_GROUP hard nofile $ProofMaxFiles" >> $ProofUlimit
 
     echo 'Starting PROOF (xproofd), hang on...'
     "$XPDBIN" -b -c "$XCONF" -l "$XLOG" -R $AF_USER
