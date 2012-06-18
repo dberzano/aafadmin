@@ -18,9 +18,16 @@ export AF_MASTER='pmaster.to.infn.it'
 export AF_USER=sysman
 export AF_GROUP=wheel
 
+# Fraction of cores to assign to workers for each host. It should be the
+# inverse of the number of users you expect to connect simultaneously, i.e.:
+# for 2 users, you'll have 0.5
+export AF_PROOF_WORKERS_PER_CORE=0.5
+
 # ROOT directory of current PROOF version (must be full and explicit, and not
 # necessarily a ROOT coming from Packman
-export AF_ROOT_PROOF="/opt/exp_software/alice/packages/VO_ALICE/ROOT/v5-30-06-1/v5-30-06-1"
+#export AF_ROOT_PROOF="/opt/exp_software/alice/packages/VO_ALICE/ROOT/v5-30-06-1/v5-30-06-1"
+#export AF_ROOT_PROOF="/opt/exp_software/alice/packages/VO_ALICE/ROOT/v5-33-02a/v5-33-02a"
+export AF_ROOT_PROOF="/opt/exp_software/alice/packages/VO_ALICE/ROOT/v5-33-02b/v5-33-02b"
 
 # Directory exported via internal PROOF's Xrootd
 export AF_PROOF_EXPORT="$AF_PREFIX/var/proof/export"
@@ -47,13 +54,15 @@ export AF_MONA_HOST='193.206.184.58:8884'
 export AF_MONA_PREFIX='PROOF::TAF::STORAGE'
 
 # Arbitrary status message to show in MonALISA
-export AF_STATUS_MSG='Warming up!'
+export AF_STATUS_MSG='Stable'
+#export AF_STATUS_MSG='Undergoing maintenance'
+#export AF_STATUS_MSG='Upgrading'
 
 # Variables for afdsmgrd
-export AF_AFDSMGRD_SLEEPSECS=15
-export AF_AFDSMGRD_SCANDSEVERYLOOPS=25
-export AF_AFDSMGRD_PARALLELXFRS=45
-export AF_AFDSMGRD_CMDTIMEOUTSECS=1000
+export AF_AFDSMGRD_SLEEPSECS=20
+export AF_AFDSMGRD_SCANDSEVERYLOOPS=15
+export AF_AFDSMGRD_PARALLELXFRS=30
+export AF_AFDSMGRD_CMDTIMEOUTSECS=1800
 export AF_AFDSMGRD_CORRUPTAFTERFAILS=3
 
 # PROOF memory limits (on RSS and virtual)
