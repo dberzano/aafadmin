@@ -1,11 +1,13 @@
 #!/bin/bash
 
 #
-# add-remove-proof-node.sh -- by Dario Berzano <dario.berzano@cern.ch>
+# auto-proof-nodes.sh -- by Dario Berzano <dario.berzano@cern.ch>
 #
-# Adds or removes a PROOF node from the dynamic PROOF configuration file, i.e.
-# proof.conf. Hostname to add/remove is read from SSH standard variables, while
-# number of cores is read from stdin.
+# Adds or removes one or more PROOF nodes to or from the dynamic PROOF
+# configuration file, i.e. proof.conf.
+#
+# It works by taking parameters from the command line, or remotely by guessing
+# the caller host via SSH standard variables.
 #
 
 # Load AF configuration
@@ -54,75 +56,6 @@ function Unlock() {
   trap '' 0  # unset EXIT traps
 }
 
-# Main function
-function ExMain() {
-
-  local NCores Action ProofConf
-
-  # Immediately read the number of cores and action on stdin
-  read NCores
-  read Action
-
-  # Is it a valid number?
-  let NCores+=0
-  if [ $NCores == 0 ] ; then
-    echo "Invalid number of cores: $NCores" >&2
-    exit 1
-  fi
-
-  # Valid action?
-  if [ "$Action" != 'add' ] && [ "$Action" != 'remove' ] ; then
-    echo "Invalid action: $Action" >&2
-    exit 1
-  fi
-
-  # Source environment variables
-  source /etc/aafrc 2> /dev/null
-  if [ $? != 0 ] ; then
-    echo 'Can not find configuration file /etc/aafrc.' >&2
-    exit 1
-  fi
-
-  # PROOF "dynamic" configuration file for nodes
-  ProofConf="$AF_PREFIX/etc/proof/proof.conf"
-
-  # Get hostname from SSH environment
-  if [ "$SSH_CLIENT" == '' ] ; then
-    echo 'No SSH_CLIENT in environment!'
-    exit 1
-  fi
-
-  # Get caller's IP address from the SSH variable
-  export Ip=$(echo $SSH_CLIENT | awk '{ print $1 }')
-
-  # Get hostname from the IP address
-  export Host=$(getent hosts $Ip 2> /dev/null | awk '{ print $2 }')
-
-  # Check if we really have the host name
-  if [ "$Host" == '' ] ; then
-    echo 'No hostname can be retrieved!'
-    exit 1
-  fi
-
-  # Lock and process
-  LockWait "$ProofConf" || exit 1
-
-  # Always removes host
-  grep -v " $Host" "$ProofConf" > "$ProofConf.0" && \
-    rm -f "$ProofConf" && \
-    mv "$ProofConf.0" "$ProofConf" || exit 1
-
-  # Add, if requested
-  if [ "$Action" == 'add' ] ; then
-    for i in `seq 1 $NCores` ; do
-      echo "worker $Host" >> "$ProofConf"
-    done
-  fi
-
-  # Lock is removed automatically
-
-}
-
 # List hosts and workers
 function ListWorkers() {
   echo 'List of host / num. of workers:'
@@ -133,32 +66,38 @@ function ListWorkers() {
 # Add hosts and workers. Each argument has the format host.domain/nwrk
 function AddHosts() {
 
-  local HostNwrk Host Nwrk
+  local HostNcores Host Ncores
 
   LockWait "$ProofConf" || return 1
 
   while [ "$#" -ge 1 ] ; do
-    HostNwrk="$1"
+    HostNcores="$1"
 
-    Host=${HostNwrk%/*}
-    Nwrk=${HostNwrk##*/}
+    Host=${HostNcores%/*}
+    Ncores=${HostNcores##*/}
 
-    # Was Nwrk given, and is it a number?
-    [ "$Nwrk" == "$HostNwrk" ] && Nwrk=1
-    let Nwrk+=0 2> /dev/null
-    [ $? != 0 ] || [ $Nwrk == 0 ] && Nwrk=1
-
-    echo "Adding $Host with $Nwrk worker(s)..."
+    # Was Ncores given, and is it a number?
+    [ "$Ncores" == "$HostNcores" ] && Ncores=1
+    let Ncores+=0 2> /dev/null
+    [ $? != 0 ] || [ $Ncores == 0 ] && Ncores=1
 
     # Always removes host
     grep -v "worker $Host" "$ProofConf" > "$ProofConf.0" && \
       rm -f "$ProofConf" && \
       mv "$ProofConf.0" "$ProofConf" || return 1
 
+    # Compute number of workers to assing starting from a config variable and
+    # the given number of cores
+    Nwrk=`echo "a=$Ncores*$AF_PROOF_WORKERS_PER_CORE+0.5;scale=0;a/=1;a" | bc`
+
+    ### WE COMPUTE NWRK ###
+
     # Add Nwrk times
     for i in `seq 1 $Nwrk` ; do
       echo "worker $Host" >> "$ProofConf"
     done
+
+    echo "Host $Host added with $Nwrk worker(s)"
 
    shift 1
   done
@@ -225,6 +164,44 @@ function CleanupWorkers() {
 
 }
 
+# Accepts commands from a remote host
+function RemoteMode() {
+
+  local Ip Host Nwrk Command
+
+  # Get hostname from SSH environment
+  if [ "$SSH_CLIENT" == '' ] ; then
+    echo 'No SSH_CLIENT in environment!' >&2
+    return 1
+  fi
+
+  # Get caller's IP address from the SSH variable
+  Ip=$(echo $SSH_CLIENT | awk '{ print $1 }')
+
+  # Get hostname from the IP address
+  Host=$(getent hosts $Ip 2> /dev/null | awk '{ print $2 }')
+
+  # Check if we really have the host name
+  if [ "$Host" == '' ] ; then
+    echo 'Hostname cannot be retrieved!' >&2
+    return 1
+  fi
+
+  # Get the command
+  read Command
+  case $Command in
+    add*)
+      echo "i have to add"
+      Nwrk=${Command##* }
+      AddHosts "$Host/$Nwrk" || return $?
+    ;;
+    delete)
+      RemoveHosts "$Host" || return $?
+    ;;
+  esac
+
+}
+
 # The main function
 function Main() {
 
@@ -269,7 +246,7 @@ function Main() {
 
       *)
         # Should never happen
-        echo "Ignoring unknown option: $1"
+        echo "Ignoring unknown option: $1" >&2
         shift 1
       ;;
 
@@ -301,7 +278,7 @@ function Main() {
       CleanupWorkers
     ;;
 
-  esac || echo 'A fatal error occured, aborting.'
+  esac || echo 'A fatal error occured, aborting.' >&2
 
 }
 
