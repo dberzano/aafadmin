@@ -31,7 +31,6 @@ FilesBin=(
   'create-deps-real.rb'
   'create-deps.sh'
   'push-puppet.sh'
-  'add-remove-proof-node.sh'
   'auto-proof-nodes.sh'
   'afdsutil.sh'
   'af-xrddm-verify.sh'

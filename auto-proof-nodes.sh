@@ -17,10 +17,22 @@ source /etc/aafrc || exit 1
 export LockLimit=15
 
 # The proof.conf
-export ProofConf="$AF_PREFIX/etc/proof/proof-dummy.conf"
+export ProofConf="$AF_PREFIX/etc/proof/proof.conf"
 
 # TCP Ports to check (usually, ssh, xrootd, proof)
 export CheckPorts=( 22 1093 1094 )
+
+# Print messages on /var/log/messages if 1
+export Logger=0
+
+# Prints a message
+function Msg() {
+  if [ "$Logger" == 1 ] ; then
+    logger -t auto-proof-nodes "$1"
+  else
+    echo -e "\033[1m$1\033[m" >&2
+  fi
+}
 
 # Lock/Wait function to regulate access to a certain file
 function LockWait() {
@@ -40,7 +52,7 @@ function LockWait() {
 
   # At this point we've given up waiting
   if [ $LockSuccess == 0 ] ; then
-    echo "Given up waiting to acquire lock over $1" >&2
+    Msg "Given up waiting to acquire lock over $1" >&2
     return 1
   fi
 
@@ -58,15 +70,16 @@ function Unlock() {
 
 # List hosts and workers
 function ListWorkers() {
-  echo 'List of host / num. of workers:'
+  Msg 'List of host / num. of workers:'
   grep ^worker "$ProofConf" | sort | uniq -c | \
-    perl -ne '/([0-9]+)\s+worker\s+([^\s]+)/ and print " * $2 / $1\n"'
+    perl -ne '/([0-9]+)\s+worker\s+([^\s]+)/ and print "  $2 / $1\n"' | \
+    while read Line ; do Msg "  $Line" ; done
 }
 
 # Add hosts and workers. Each argument has the format host.domain/nwrk
 function AddHosts() {
 
-  local HostNcores Host Ncores
+  local HostNcores Host Ncores Nwrk
 
   LockWait "$ProofConf" || return 1
 
@@ -90,14 +103,12 @@ function AddHosts() {
     # the given number of cores
     Nwrk=`echo "a=$Ncores*$AF_PROOF_WORKERS_PER_CORE+0.5;scale=0;a/=1;a" | bc`
 
-    ### WE COMPUTE NWRK ###
-
     # Add Nwrk times
     for i in `seq 1 $Nwrk` ; do
       echo "worker $Host" >> "$ProofConf"
     done
 
-    echo "Host $Host added with $Nwrk worker(s)"
+    Msg "Host $Host added with $Nwrk worker(s)"
 
    shift 1
   done
@@ -135,7 +146,7 @@ function CleanupWorkers() {
 
   Tmp=`mktemp /tmp/auto-proof-XXXXX`
 
-  echo 'Cleaning up inactive workers:'
+  #Msg 'Cleaning up inactive workers...'
 
   grep ^worker "$ProofConf" | sort | uniq -c | \
     perl -ne '/[0-9]+\s+worker\s+([^\s]+)/ and print "$1\n"' > $Tmp
@@ -151,16 +162,21 @@ function CleanupWorkers() {
     done
 
     if [ $Ok == 0 ] ; then
-      echo " * $Host: unreachable!"
+      #Msg "  $Host: unreachable!"
       ToRemove="$ToRemove $Host"
-    else
-      echo " * $Host: active"
+    #else
+    #  Msg "  $Host: active"
     fi
 
   done < $Tmp
   rm -f $Tmp
 
-  eval "RemoveHosts $ToRemove" || return $?
+  if [ "$ToRemove" != '' ] ; then
+    Msg "Workers found inactive: `echo $ToRemove`"
+    eval "RemoveHosts $ToRemove" || return $?
+  else
+    Msg "No dead PROOF workers found"
+  fi
 
 }
 
@@ -171,7 +187,7 @@ function RemoteMode() {
 
   # Get hostname from SSH environment
   if [ "$SSH_CLIENT" == '' ] ; then
-    echo 'No SSH_CLIENT in environment!' >&2
+    Msg 'No SSH_CLIENT in environment!'
     return 1
   fi
 
@@ -183,7 +199,7 @@ function RemoteMode() {
 
   # Check if we really have the host name
   if [ "$Host" == '' ] ; then
-    echo 'Hostname cannot be retrieved!' >&2
+    Msg 'Hostname cannot be retrieved!'
     return 1
   fi
 
@@ -191,7 +207,6 @@ function RemoteMode() {
   read Command
   case $Command in
     add*)
-      echo "i have to add"
       Nwrk=${Command##* }
       AddHosts "$Host/$Nwrk" || return $?
     ;;
@@ -202,6 +217,32 @@ function RemoteMode() {
 
 }
 
+function PrintHelp() {
+  local Tmp OldIFS
+  Tmp=`mktemp /tmp/auto-proof-XXXXX`
+  cat > $Tmp <<_EOF_
+`basename $0` -- by Dario Berzano <dario.berzano@cern.ch>
+Manages dynamic addition and removal of PROOF workers, both manually and
+automatically.
+
+Usage: `basename $0` [options] Node1 Node2...
+      --remote,-r                  SSH command mode: accepts commands on stdin
+      --add,-a                     adds nodes (in format: <node.dom>/<cores>)
+      --delete,-d                  deletes nodes
+      --list                       list current nodes with n. workers
+      --cleanup                    checks and cleans up inactive workers
+      --logger                     output on system's log facility
+      --help                       this help screen
+_EOF_
+  OldIFS="$IFS"
+  IFS="\n"
+  while read Line ; do
+    echo "$Line"
+  done < $Tmp
+  IFS="$OldIFS"
+  rm -f $Tmp
+}
+
 # The main function
 function Main() {
 
@@ -210,7 +251,7 @@ function Main() {
   Prog=$(basename "$0")
 
   Args=$(getopt -o 'radlc' \
-    --long 'remote,add,delete,list,cleanup' -n"$Prog" -- "$@")
+    --long 'remote,add,delete,list,cleanup, logger' -n"$Prog" -- "$@")
   [ $? != 0 ] && exit 1
 
   eval set -- "$Args"
@@ -244,9 +285,14 @@ function Main() {
         shift 1
       ;;
 
+      --logger)
+        Logger=1
+        shift 1
+      ;;
+
       *)
         # Should never happen
-        echo "Ignoring unknown option: $1" >&2
+        Msg "Ignoring unknown option: $1"
         shift 1
       ;;
 
@@ -278,7 +324,12 @@ function Main() {
       CleanupWorkers
     ;;
 
-  esac || echo 'A fatal error occured, aborting.' >&2
+    help|*)
+      PrintHelp
+      exit 1
+    ;;
+
+  esac || Msg 'A fatal error occured, aborting.' >&2
 
 }
 
