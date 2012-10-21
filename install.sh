@@ -37,6 +37,7 @@ FilesBin=(
   'afdsutil.C'
   'proof-packages.sh'
   'af-monalisa.pl'
+  'packman-lite.sh'
 )
 
 # Files to copy in etc/proof
@@ -270,6 +271,8 @@ function Main {
       export TPL_PACKAGES="$TPL_VAR/proofbox/$AF_USER/packages"
       export TPL_PROOFPORT='1093'
       export TPL_XRDPORT='1094'
+
+      export TPL_MONA_HOST="$AF_MONA_HOST"
 
       # ROOT versions available, separated by a pipe
       export TPL_ROOT_VER=$(

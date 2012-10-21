@@ -193,6 +193,13 @@ xpd.putenv LOCALDATASERVER=root://<user>@<host>:$TPL_XRDPORT/
 ##                                          ApMon server         MonALISA tag
 
 #
+# Monitoring
+#
+
+xpd.putrc ProofServ.Monitoring: SQL mysql://localhost:3306 proofacc 8hysCAG5Hc9nA83 proofacc.proofquerylog,
+xpd.putrc +ProofServ.Monitoring: MonaLisa $TPL_MONA_HOST PROOF::TAF::STORAGE_myproof
+
+#
 # Available ROOT versions
 #
 
