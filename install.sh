@@ -227,8 +227,8 @@ function Main {
   cp -vpr 'perl-apmon/' "$AF_PREFIX/lib/" || exit $?
 
   # Create dependencies immediately
-  pecho 'Creating software dependencies...'
-  "$AF_PREFIX"/bin/create-deps.sh
+  #pecho 'Creating software dependencies...'
+  #"$AF_PREFIX"/bin/create-deps.sh
 
   # xrddm: download and compile if forced or if unpresent
   if [ ! -x "$AF_PREFIX"/bin/xrddm ] || [ "$ForceXrddm" == 1 ]; then

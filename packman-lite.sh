@@ -15,6 +15,7 @@ source /etc/aafrc || exit 1
 
 export GridPackages=''
 export LocalPackages=''
+export GridPackagesRegexp='^.*-AN$'
 
 # Program name
 Prog=`basename "$0"`
@@ -44,6 +45,7 @@ function PrintHelp {
   pecho '      --clean PACKAGE              removes PACKAGE (or "old")'
   pecho '      --add PACKAGE                adds PACKAGE (or "new")'
   pecho '      --sync                       removes old and adds new packages'
+  pecho '      --list                       lists all [G]rid and/or [L]ocal packages'
   pecho '      --help                       this help screen'
 
 }
@@ -59,7 +61,8 @@ function SetGridPackages() {
     GridPackages[$Count]="$Pack"
     let Count++
   done < <( curl -s http://alimonitor.cern.ch/packages/ | \
-    perl -ne '/(VO_ALICE\@AliRoot::[A-Za-z0-9_-]+)/ and print "$1\n"' )
+    perl -ne '/(VO_ALICE\@AliRoot::[A-Za-z0-9_-]+)/ and print "$1\n"' |
+    perl -ne '/'"$GridPackagesRegexp"'/ and print "$_"' )
 
   # Check number of packages -- if zero, it's likely we have a problem
   if [ ${#GridPackages[@]} == 0 ] ; then
@@ -158,9 +161,9 @@ function CleanGridPackage() {
   for L in "${LocalPackages[@]}" ; do
     IsOld=1
     for G in "${GridPackages[@]}" ; do
-     if [ "$L" == "$G" ] ; then
-       IsOld=0
-     fi
+      if [ "$L" == "$G" ] ; then
+        IsOld=0
+      fi
     done
 
     [ $IsOld == 1 ] && OldPackages="$OldPackages $L"
@@ -169,7 +172,7 @@ function CleanGridPackage() {
 
   # List old ones?
   pecho 'List of old packages candidate for removal:'
-  if [ "$O" == '' ] ; then
+  if [ "$OldPackages" == '' ] ; then
     pecho 'No old packages'
     return 0
   fi
