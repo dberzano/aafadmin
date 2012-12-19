@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# packman-lite.sh -- by Dario Berzano <dario.berzano@cern.ch>
+# af-packman-lite.sh -- by Dario Berzano <dario.berzano@cern.ch>
 #
 # Lightweight replacement for Alien Packman which uses the ALICE Grid packages
 # webpage to retrieve installation scripts for the various AliRoot versions.
@@ -336,7 +336,7 @@ if [ $? != 0 ] ; then
   exit 1
 fi
 
-"$AF_PREFIX"/bin/create-deps-real.rb "$@"
+"$AF_PREFIX"/bin/af-create-deps.rb "$@"
 if [ $? != 0 ] ; then
   pecho 'Cannot create dependencies! Abort.'
   exit 1

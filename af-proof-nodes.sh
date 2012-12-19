@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# auto-proof-nodes.sh -- by Dario Berzano <dario.berzano@cern.ch>
+# af-proof-nodes.sh -- by Dario Berzano <dario.berzano@cern.ch>
 #
 # Adds or removes one or more PROOF nodes to or from the dynamic PROOF
 # configuration file, i.e. proof.conf.
@@ -28,7 +28,7 @@ export Logger=0
 # Prints a message
 function Msg() {
   if [ "$Logger" == 1 ] ; then
-    logger -t auto-proof-nodes "$1"
+    logger -t af-proof-nodes "$1"
   else
     echo -e "\033[1m$1\033[m" >&2
   fi
@@ -144,7 +144,7 @@ function RemoveHosts() {
 function CleanupWorkers() {
   local P Host Ok ToRemove Tmp
 
-  Tmp=`mktemp /tmp/auto-proof-XXXXX`
+  Tmp=`mktemp /tmp/af-proof-nodes-XXXXX`
 
   #Msg 'Cleaning up inactive workers...'
 
@@ -219,7 +219,7 @@ function RemoteMode() {
 
 function PrintHelp() {
   local Tmp OldIFS
-  Tmp=`mktemp /tmp/auto-proof-XXXXX`
+  Tmp=`mktemp /tmp/af-proof-nodes-XXXXX`
   cat > $Tmp <<_EOF_
 `basename $0` -- by Dario Berzano <dario.berzano@cern.ch>
 Manages dynamic addition and removal of PROOF workers, both manually and

@@ -28,10 +28,9 @@ Skel=(
 
 # Files to copy in bin
 FilesBin=(
-  'create-deps-real.rb'
-  'create-deps.sh'
+  'af-create-deps.rb'
   'push-puppet.sh'
-  'auto-proof-nodes.sh'
+  'af-proof-nodes.sh'
   'afdsutil.sh'
   'af-xrddm-verify.sh'
   'afdsutil.C'
@@ -225,10 +224,6 @@ function Main {
   # Perl ApMon library
   pecho 'Installing Perl ApMon library...'
   cp -vpr 'perl-apmon/' "$AF_PREFIX/lib/" || exit $?
-
-  # Create dependencies immediately
-  #pecho 'Creating software dependencies...'
-  #"$AF_PREFIX"/bin/create-deps.sh
 
   # xrddm: download and compile if forced or if unpresent
   if [ ! -x "$AF_PREFIX"/bin/xrddm ] || [ "$ForceXrddm" == 1 ]; then

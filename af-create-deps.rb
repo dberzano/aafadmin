@@ -1,7 +1,7 @@
 #!/usr/bin/ruby
 
 #
-# create-deps-real.rb -- by Dario Berzano <dario.berzano@cern.ch>
+# af-create-deps.rb -- by Dario Berzano <dario.berzano@cern.ch>
 #
 # Creates the dependency file for AliRoot versions. The following environment
 # variables are needed:
