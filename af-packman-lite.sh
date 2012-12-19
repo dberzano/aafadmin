@@ -45,7 +45,8 @@ function PrintHelp {
   pecho '      --clean PACKAGE              removes PACKAGE (or "old")'
   pecho '      --add PACKAGE                adds PACKAGE (or "new")'
   pecho '      --sync                       removes old and adds new packages'
-  pecho '      --list                       lists all [G]rid and/or [L]ocal packages'
+  pecho '      --cleanup-deps               removes unneeded Geant3/ROOT'
+  pecho '      --list                       lists packages ([G]rid/[L]ocal)'
   pecho '      --help                       this help screen'
 
 }
@@ -197,7 +198,58 @@ function CleanGridPackage() {
     PackageDir="$AF_PACK_DIR/VO_ALICE/AliRoot/$PackageDir"
 
     pecho "Removing $FullPackage"
-    rm -rf "$PackageDir"
+    $Dry rm -rf "$PackageDir"
+  done
+
+}
+
+# Removes unneeded dependencies from local repository
+function CleanupDeps() {
+  local Geant3Versions=''
+  local RootVersions=''
+  local G3Ver RootVer Ali G3VerShort RootVerShort
+
+  pecho 'Finding unneeded ROOT and Geant3 versions...'
+
+  for Ali in ${LocalPackages[@]} ; do
+    Deps=`grep "$Ali" "$AF_DEP_FILE" | head -n1`
+    [ "$Deps" == '' ] && continue
+
+    RootVer=`echo $Deps | cut -d\| -f2 | sed -e 's#VO_ALICE@ROOT::##'`
+    G3Ver=`echo $Deps | cut -d\| -f3 | sed -e 's#VO_ALICE@GEANT3::##'`
+
+    echo "$RootVersions" | grep -q "$RootVer" || \
+      RootVersions="$RootVersions $RootVer"
+
+    echo "$Geant3Versions" | grep -q "$G3Ver" || \
+      Geant3Versions="$Geant3Versions $G3Ver"
+  done
+
+  # Now we have the legitimate ROOT and Geant3 versions in two variables. List
+  # extra ones
+  Geant3Versions=`echo $Geant3Versions`
+  Geant3Versions=`echo $Geant3Versions\$|sed -e 's# #$|#g'`
+  RootVersions=`echo $RootVersions`
+  RootVersions=`echo $RootVersions\$|sed -e 's# #$|#g'`
+
+  # Geant3
+  for G3Ver in "$AF_PACK_DIR/VO_ALICE/GEANT3/"* ; do
+    echo $G3Ver | egrep -q "$Geant3Versions"
+    if [ $? != 0 ]; then
+      G3VerShort=`basename "$G3Ver"`
+      pecho "Removing Geant3 $G3VerShort..."
+      $Dry rm -rf "$G3Ver"
+    fi
+  done
+
+  # ROOT
+  for RootVer in "$AF_PACK_DIR/VO_ALICE/ROOT/"* ; do
+    echo $RootVer | egrep -q "$RootVersions"
+    if [ $? != 0 ]; then
+      RootVerShort=`basename "$RootVer"`
+      pecho "Removing ROOT $RootVerShort..."
+      $Dry rm -rf "$RootVer"
+    fi
   done
 
 }
@@ -211,7 +263,7 @@ function AddGridPackage() {
 
   if [ "$1" != 'new' ] ; then
     # Adding a single package
-    InstallPackage "$1" || return 1
+    $Dry InstallPackage "$1" || return 1
   fi
 
   # Adding all "new" packages
@@ -224,7 +276,7 @@ function AddGridPackage() {
   # Install new packages
   for N in $NewPackages ; do
     pecho "Adding $N"
-    InstallPackage "$N"
+    $Dry InstallPackage "$N"
     if [ $? != 0 ] ; then
       [ "$AbortOnError" == 1 ] && return 1 || ListFail="$ListFail $N"
     else
@@ -269,7 +321,9 @@ function InstallPackage() {
 
 Prog=$(basename "$0")
 
-Args=$(getopt -o '' --long 'clean:,add:,list,sync,help' -n"$Prog" -- "$@")
+Args=$(getopt -o '' \
+  --long 'clean:,add:,list,sync,proof,cleanup-deps,dry-run,help' \
+  -n"$Prog" -- "$@")
 [ $? != 0 ] && exit 1
 
 eval set -- "$Args"
@@ -293,9 +347,24 @@ while [ "$1" != "--" ] ; do
       shift 1
     ;;
 
+    --cleanup-deps)
+      CleanupDeps=1
+      shift 1
+    ;;
+
     --sync)
       CleanPackage='old'
       AddPackage='new'
+      shift 1
+    ;;
+
+    --dry-run)
+      export Dry='echo'
+      shift 1
+    ;;
+
+    --proof)
+      Proof='1'
       shift 1
     ;;
 
@@ -322,7 +391,7 @@ shift # --
 
 # Nothing to do? Help screen
 if [ "$CleanPackage" == '' ] && [ "$ListPackages" == '' ] && \
-  [ "$AddPackage" == '' ] ; then
+  [ "$AddPackage" == '' ] && [ "$CleanupDeps" != 1 ] ; then
   PrintHelp
   exit 0
 fi
@@ -352,9 +421,24 @@ fi
 # Clean packages first
 if [ "$CleanPackage" != '' ] ; then
   CleanGridPackage "$CleanPackage"
+  ProofOpts="$ProofOpts --clean $CleanPackage"
 fi
 
 # Add packages
 if [ "$AddPackage" != '' ] ; then
   AddGridPackage "$AddPackage"
+  ProofOpts="$ProofOpts --add $AddPackage"
+fi
+
+# Last action is to cleanup old dependencies
+if [ "$CleanupDeps" == 1 ] ; then
+  SetLocalPackages  # maybe they changed!
+  CleanupDeps
+fi
+
+# Invoke command to synchronize PROOF packages
+if [ "$Proof" == 1 ] ; then
+  pecho 'Reflecting action on PROOF packages...'
+  "$AF_PREFIX"/bin/af-proof-packages.sh $ProofOpts
+  exit $?
 fi
