@@ -18,6 +18,7 @@ ErrHelp=42
 # Directories to create
 Skel=(
   'bin'
+  'libexec'
   'etc/proof'
   'etc/xrootd'
   'etc/init.d'
@@ -28,15 +29,19 @@ Skel=(
 
 # Files to copy in bin
 FilesBin=(
-  'af-create-deps.rb'
   'push-puppet.sh'
   'af-proof-nodes.sh'
-  'afdsutil.sh'
+  'af-dsutil.sh'
   'af-xrddm-verify.sh'
-  'afdsutil.C'
-  'proof-packages.sh'
+  'af-proof-packages.sh'
   'af-monalisa.pl'
-  'packman-lite.sh'
+  'af-packman-lite.sh'
+)
+
+# Files to copy in libexec (i.e. binaries not in path)
+FilesLibexec=(
+  'af-create-deps.rb'
+  'afdsutil.C'
 )
 
 # Files to copy in etc/proof
@@ -216,10 +221,14 @@ function Main {
 
   # Install files (-o: overwrite, -k: keep)
   Copy -o 'bin' "${FilesBin[@]}" || exit $?
+  Copy -o 'libexec' "${FilesLibexec[@]}" || exit $?
   Copy -o 'etc/proof' "${FilesEtcProof[@]}" || exit $?
   Copy -o 'etc/xrootd' "${FilesEtcXrootd[@]}" || exit $?
   Copy -o 'etc/init.d' "${FilesEtcInitd[@]}" || exit $?
   Copy -o 'etc' "${FilesEtc[@]}" || exit $?
+
+  # Generate dependencies
+  "$AF_PREFIX"/libexec/af-create-deps.rb
 
   # Perl ApMon library
   pecho 'Installing Perl ApMon library...'

@@ -1,5 +1,5 @@
 #
-# afdsutil.sh -- by Dario Berzano <dario.berzano@cern.ch>
+# af-dsutil.sh -- by Dario Berzano <dario.berzano@cern.ch>
 #
 # Wrapper around the ROOT macro to manage datasets.
 #
@@ -46,5 +46,5 @@ if [ "$CreateToken" != 0 ] ; then
 fi
 
 # Starting ROOT: exit code is preserved
-root -l -b "$AF_PREFIX/bin/afdsutil.C+" "$@"
+root -l -b "$AF_PREFIX/libexec/afdsutil.C+" "$@"
 exit $?

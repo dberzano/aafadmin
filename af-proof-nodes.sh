@@ -238,9 +238,9 @@ _EOF_
   IFS="\n"
   while read Line ; do
     echo "$Line"
-  done < $Tmp
+  done < "$Tmp"
   IFS="$OldIFS"
-  rm -f $Tmp
+  rm -f "$Tmp"
 }
 
 # The main function
