@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# proof-packages.sh -- by Dario Berzano <dario.berzano@cern.ch>
+# af-proof-packages.sh -- by Dario Berzano <dario.berzano@cern.ch>
 #
 # Creates PROOF packages for the existing AliRoot versions. It is meant to be
 # run on the master only (synchronization happens elsewhere, i.e. via Puppet).
@@ -50,6 +50,7 @@ function PrintHelp {
   pecho '      --clean PACKAGE              removes PACKAGE (or "old")'
   pecho '      --add PACKAGE                adds PACKAGE (or "new")'
   pecho '      --sync                       removes old and adds new packages'
+  pecho '      --list                       list all local PROOF packages'
   pecho '      --abort                      abort on error'
   pecho '      --no-token                   do not check for token/proxy'
   pecho '      --help                       this help screen'
@@ -299,13 +300,23 @@ function AddAliPack() {
 
 }
 
+# List all currently available PROOF packages
+function ListAliPack() {
+  local PackDir="$AF_PREFIX/var/proof/proofbox/$AF_USER/packages"
+  pecho 'List of AliRoot PROOF packages:'
+  ls -1 $PackDir 2> /dev/null | sed -e 's#.par$##' | sort -u | \
+  while read Pack ; do
+    pecho "  $Pack"
+  done
+}
+
 #
 # Entry point
 #
 
 Prog=$(basename "$0")
 
-Args=$(getopt -o '' --long 'clean:,add:,abort,sync,help' -n"$Prog" -- "$@")
+Args=$(getopt -o '' --long 'clean:,add:,abort,sync,list,help' -n"$Prog" -- "$@")
 [ $? != 0 ] && exit 1
 
 eval set -- "$Args"
@@ -335,6 +346,11 @@ while [ "$1" != "--" ] ; do
       shift 1
     ;;
 
+    --list)
+      ListPackages=1
+      shift 1
+    ;;
+
     --help)
       PrintHelp
       exit 1
@@ -357,7 +373,8 @@ done
 shift # --
 
 # Help screen if nothing to do
-if [ "$AddPackage" == '' ] && [ "$CleanPackage" == '' ] ; then
+if [ "$AddPackage" == '' ] && [ "$CleanPackage" == '' ] &&
+  [ "$ListPackages" != '1' ] ; then
   PrintHelp
   exit 1
 fi
@@ -369,6 +386,15 @@ fi
 if [ "$NoToken" != 1 ] ; then
   ( source "$AF_PREFIX/etc/env-alice.sh" --alien && \
     source "$AF_PREFIX/etc/af-alien-lib.sh" && AutoAuth )
+fi
+
+#
+# List packages. If doing so, do nothing else
+#
+
+if [ "$ListPackages" == 1 ] ; then
+  ListAliPack
+  exit $?
 fi
 
 #
