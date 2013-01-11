@@ -182,6 +182,9 @@ function xpdstart() {
     # Kills all the stale PROOF workers
     xpdkillwrk
 
+    # Add MonALISA monitoring in cron.d
+    cat "$AF_PREFIX"/etc/af-monalisa.cron > /etc/cron.d/af-monalisa
+
     # Sets ulimits for PROOF
     echo "* - nofile $ProofMaxFiles" > $ProofUlimit
     #echo "@$AF_USERS_GROUP soft nofile $ProofMaxFiles" >  $ProofUlimit
