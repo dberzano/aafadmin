@@ -19,6 +19,9 @@ export LockLimit=15
 # The proof.conf
 export ProofConf="$AF_PREFIX/etc/proof/proof.conf"
 
+# Known hosts for SSH
+export KnownHosts="$HOME/.ssh/known_hosts"
+
 # TCP Ports to check (usually, ssh, xrootd, proof)
 export CheckPorts=( 22 1093 1094 )
 
@@ -108,6 +111,9 @@ function AddHosts() {
       echo "worker $Host" >> "$ProofConf"
     done
 
+    # Syncing configuration and packages for host
+    "$AF_PREFIX"/bin/af-sync -a "$Host"
+
     Msg "Host $Host added with $Nwrk worker(s)"
 
    shift 1
@@ -115,6 +121,40 @@ function AddHosts() {
 
   Unlock "$ProofConf"
 
+}
+
+# Add host key to known hosts. First argument is the key, others are host
+# aliases. Existing keys are removed from known_host beforehand. Duplicate
+# aliases are pruned
+function AddHostKey() {
+
+  local HostKey="$1"
+  local Host="$2"
+  local Aliases
+  shift 1
+
+  # List of aliases separated by a pipe, ready for grepping
+  Aliases=$(
+    while [ $# -ge 1 ] ; do
+      echo \|$1
+      shift
+    done | sort -u | xargs -L1 echo -n
+  )
+  Aliases=${Aliases:1}
+
+  # Remove old keys
+  LockWait "$KnownHosts" || return 1
+  cat "$KnownHosts" | egrep -v "$Aliases" > "$KnownHosts".0
+  mv "$KnownHosts".0 "$KnownHosts"
+
+  # Add new key
+  Aliases=`echo $Aliases | sed -e 's#|#,#g'`
+  echo "$Aliases $HostKey" >> "$KnownHosts"
+  #ssh-keyscan -t rsa "$Host" | \
+  #  sed -e 's#'$Host'#'"$Aliases"'#' >> "$KnownHosts"
+  Unlock "$KnownHosts"
+
+  return 0
 }
 
 # Remove hosts: takes hosts as arguments
@@ -207,7 +247,9 @@ function RemoteMode() {
   read Command
   case $Command in
     add*)
-      Nwrk=${Command##* }
+      Nwrk=`echo $Command | cut -d' ' -f2`
+      HostKey=`echo $Command | cut -d' ' -f3-`
+      AddHostKey "$HostKey" $Host ${Host%%.*} $Ip || return $?
       AddHosts "$Host/$Nwrk" || return $?
     ;;
     delete)
