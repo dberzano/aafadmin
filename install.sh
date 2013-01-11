@@ -36,6 +36,7 @@ FilesBin=(
   'af-proof-packages.sh'
   'af-monalisa.pl'
   'af-packman-lite.sh'
+  'af-sync'
 )
 
 # Files to copy in libexec (i.e. binaries not in path)
