@@ -20,12 +20,6 @@ AliMeta=`readlink -e "$AliMeta"`
 # Disable ROOT history (this is a ROOT variable)
 export ROOT_HIST=0
 
-# Check if it exists or not
-if [ "$AliMeta" == '' ] ; then
-  pecho "$Prog: can't find AliRoot meta package"
-  exit 1
-fi
-
 # Colored echo on stderr
 function pecho() {
   local NewLine=''
@@ -35,6 +29,12 @@ function pecho() {
   fi
   echo -e $NewLine "\033[1m$1\033[m" >&2
 }
+
+# Check if it exists or not
+if [ "$AliMeta" == '' ] ; then
+  pecho "$Prog: can't find AliRoot meta package"
+  exit 1
+fi
 
 # Prints help
 function PrintHelp {
