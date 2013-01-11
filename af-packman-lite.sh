@@ -15,7 +15,8 @@ source /etc/aafrc || exit 1
 
 export GridPackages=''
 export LocalPackages=''
-export GridPackagesRegexp='^.*-AN$'
+export GridPackagesRegexp='^.*-AN(-[0-9]+)?$'
+export Dry='echo'
 
 # Program name
 Prog=`basename "$0"`
@@ -47,6 +48,8 @@ function PrintHelp {
   pecho '      --sync                       removes old and adds new packages'
   pecho '      --cleanup-deps               removes unneeded Geant3/ROOT'
   pecho '      --list                       lists packages ([G]rid/[L]ocal)'
+  pecho '      --proof                      repeats action on PROOF PARs too'
+  pecho '      --no-dry-run                 turns off dry run (on by default)'
   pecho '      --help                       this help screen'
 
 }
@@ -322,7 +325,7 @@ function InstallPackage() {
 Prog=$(basename "$0")
 
 Args=$(getopt -o '' \
-  --long 'clean:,add:,list,sync,proof,cleanup-deps,dry-run,help' \
+  --long 'clean:,add:,list,sync,proof,cleanup-deps,no-dry-run,help' \
   -n"$Prog" -- "$@")
 [ $? != 0 ] && exit 1
 
@@ -358,8 +361,8 @@ while [ "$1" != "--" ] ; do
       shift 1
     ;;
 
-    --dry-run)
-      export Dry='echo'
+    --no-dry-run)
+      Dry=''
       shift 1
     ;;
 
@@ -405,7 +408,7 @@ if [ $? != 0 ] ; then
   exit 1
 fi
 
-"$AF_PREFIX"/bin/af-create-deps.rb "$@"
+"$AF_PREFIX"/bin/af-create-deps.rb
 if [ $? != 0 ] ; then
   pecho 'Cannot create dependencies! Abort.'
   exit 1
@@ -436,9 +439,12 @@ if [ "$CleanupDeps" == 1 ] ; then
   CleanupDeps
 fi
 
+# Rebuild dependency list
+"$AF_PREFIX"/bin/af-create-deps.rb
+
 # Invoke command to synchronize PROOF packages
 if [ "$Proof" == 1 ] ; then
   pecho 'Reflecting action on PROOF packages...'
-  "$AF_PREFIX"/bin/af-proof-packages.sh $ProofOpts
+  $Dry "$AF_PREFIX"/bin/af-proof-packages.sh $ProofOpts
   exit $?
 fi
