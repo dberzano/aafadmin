@@ -220,6 +220,11 @@ function Main {
   done
   echo ''
 
+  # Create datasets cache
+  pecho 'Creating cache directory for AliEn datasets:' 
+  mkdir -pv "$AF_DATASETS_CACHE"
+  chmod -v 0777 "$AF_DATASETS_CACHE"
+
   # Install files (-o: overwrite, -k: keep)
   Copy -o 'bin' "${FilesBin[@]}" || exit $?
   Copy -o 'libexec' "${FilesLibexec[@]}" || exit $?
