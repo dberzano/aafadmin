@@ -50,41 +50,131 @@ function PrintHelp {
   pecho '      --clean PACKAGE              removes PACKAGE (or "old")'
   pecho '      --add PACKAGE                adds PACKAGE (or "new")'
   pecho '      --sync                       removes old and adds new packages'
-  pecho '      --list,-l                    list all local PROOF packages'
+  pecho '      --list                       list all local PROOF packages'
   pecho '      --abort                      abort on error'
-  pecho '      --update-list,-u             updates packages list from remote'
-  pecho '      --dry-run                    dry run'
+  pecho '      --no-token                   do not check for token/proxy'
   pecho '      --help                       this help screen'
 
 }
 
-# Creates package for version $1 in the packages directory. No need to invoke
-# PROOF or compile anything. Returns 0 on success, !0 on failure
+# Creates package in a destination directory. Return value: 0=ok, !0=failure
 function MakeAliPar() {
 
   local AliVer="$1"
   local DestDir="$2"
   local ParDir="$DestDir/$AliVer"
-  local ParFile="$ParDir".par
-  local PackDir="$AF_PREFIX/var/proof/proofbox/$AF_USER/packages"
 
-  pecho "Creating parfile $ParFile..."
+  pecho "Creating parfile $DestDir/$AliVer.par..."
 
-  # Creates package by copying template ROOT macro
-  mkdir -p "$ParDir"/PROOF-INF
-  cp -v "$AF_PREFIX"/etc/AliRoot_PAR_SETUP.C "$ParDir"/PROOF-INF/SETUP.C
+  # Package directory
+  mkdir -p "$ParDir"
+
+  # rsync there
+  rsync -a "$AliMeta/" "$ParDir" || return 1
+
+  # Change file with sed
+  sed \
+    -e 's/cat %s\/deps\/aliroot_deps.txt/cat \\\"$AF_DEP_FILE\\\"/' \
+    -i "$ParDir/PROOF-INF/SETUP.C" || return 1
 
   # Compress package (must be gzipped)
   tar -C "$DestDir" --force-local \
     -czf "$DestDir/$AliVer.par" "$AliVer/" || return 1
 
-  # Put packages in place
-  mv -v "$ParDir" "$ParFile" "$PackDir" || return 1
+  # Remove directory
+  rm -rf "$ParDir"
 
-  # Remove intermediate directory
-  #rm -rf "$DestDir"
+}
 
-  return 0
+# Uploads package
+function UpAliPar() {
+
+  local ParFile="$1"
+  local AliPackage=`basename "$ParFile"`
+  AliPackage=${AliPackage%.*}
+
+  # AliRoot version (plain), without VO_ALICE@AliRoot::
+  local AliVer=`echo $AliPackage | awk -F :: '{ print $2 }'`
+  [ "$AliVer" == '' ] && return 1
+
+  # Directory containing macro to upload stuff
+  local RootMacroDir
+  RootMacroDir=`mktemp -d /tmp/af-root-macro-XXXXX`
+
+  # PROOF sandbox
+  local ProofSandbox RootSandbox
+  ProofSandbox=`mktemp -d /tmp/af-proof-sandbox-XXXXX`
+  RootSandbox=`mktemp -d /tmp/af-root-sandbox-XXXXX`
+
+  (
+    # Source AliRoot stuff, with correct dependencies
+    source "$AF_PREFIX/etc/env-alice.sh" --aliroot $AliVer --verbose || return 1
+
+    # Root version
+    RootVer=`basename "$ROOTSYS"`
+
+    # A ROOT macro to upload the package
+    local RootMacro="$RootMacroDir/EnableUpload.C"
+    cat > "$RootMacro" <<EOF
+{
+  gEnv->SetValue("Proof.Sandbox", "$ProofSandbox");
+  gEnv->SetValue("XSec.GSI.DelegProxy", "2");
+
+  TProof::Reset("$AF_USER@$AF_MASTER", 0);
+
+  // Watch out: set ROOT version by *package name*!
+  TProof::Mgr("$AF_USER@$AF_MASTER")->SetROOTVersion("VO_ALICE@ROOT::$RootVer");
+
+  //if (!TProof::Open("$AF_USER@$AF_MASTER", "workers=1x")) gSystem->Exit(1);
+
+  // Enable on master only: other workers are synced elsewhere
+  if (!TProof::Open("$AF_USER@$AF_MASTER", "masteronly")) gSystem->Exit(1);
+
+  if (gProof->UploadPackage("$ParFile")) {
+    gProof->Close();  // be kind and avoid "maximum sessions reached" problem
+    gSystem->Exit(2);
+  }
+
+  // ALIROOT mode is *mandatory* to avoid the libOADB problem (not present in
+  // every AliRoot version, apparently)
+  TList *listOpts = new TList();
+  listOpts->Add( new TNamed("ALIROOT_MODE", "ALIROOT") );
+
+  if (gProof->EnablePackage("$ParFile", listOpts)) {
+    gProof->Close();
+    gSystem->Exit(3);
+  }
+
+  gProof->Close();
+}
+EOF
+
+    # Execute it
+    TmpLog=`mktemp /tmp/af-root-log-XXXXX`
+    cd "$RootSandbox"
+    root -l -b -q "$RootMacro" > $TmpLog 2>&1
+    ExitCode=$?
+    cd - > /dev/null 2>&1
+
+    # Remove garbage locks
+    find /tmp -name 'proof-package-lock-*af-proof-sandbox*' -exec rm -vf '{}' \;
+
+    [ $ExitCode != 0 ] && cat $TmpLog
+    rm -f $TmpLog
+
+    # Propagate exitcode
+    return $ExitCode
+
+  )
+
+  # Inherit exitcode
+  ExitCode=$?
+
+  # Cleanup
+  rm -rf "$ProofSandbox" "$RootMacroDir" "$RootSandbox"
+
+  return $ExitCode
+
 }
 
 # Cleans AliRoot PROOF packages
@@ -107,7 +197,7 @@ function CleanAliPack() {
       grep -c "^$Pack|" "$AF_DEP_FILE" > /dev/null
       if [ $? != 0 ] ; then
         pecho "Removing obsoleted $Pack"
-        $DryRunPrefix rm -rvf "$PackDir/$Pack" "$PackDir/$Pack.par"
+        rm -rvf "$PackDir/$Pack" "$PackDir/$Pack.par"
       else
         pecho "Keeping $Pack"
       fi
@@ -118,13 +208,13 @@ function CleanAliPack() {
 
     # Removes all packages
     pecho 'Cleaning all packages...'
-    $DryRunPrefix rm -rvf "$PackDir/"*
+    rm -rvf "$PackDir/"*
 
   else
 
     # Removes a single package (not safe, beware)
     pecho "Removing package $AliPack..."
-    $DryRunPrefix rm -rvf "$PackDir/$AliPack" "$PackDir/$AliPack.par"
+    rm -rvf "$PackDir/$AliPack" "$PackDir/$AliPack.par"
 
   fi
 
@@ -159,7 +249,7 @@ function AddAliPack() {
         pecho "Installing package $Pack"
 
         rm -rvf "$PackDir/$Pack"*
-        $DryRunPrefix MakeAliPar "$Pack" "$TempDir"
+        MakeAliPar "$Pack" "$TempDir" && UpAliPar "$TempDir/$Pack.par"
 
         if [ $? != 0 ] ; then
           pecho "Installation of package $Pack failed"
@@ -192,7 +282,7 @@ function AddAliPack() {
     # Adds a single package
     pecho "Installing package $AliPack"
     rm -rvf "$PackDir/$AliPack"*
-    $DryRunPrefix MakeAliPar "$AliPack" "$TempDir"
+    MakeAliPar "$AliPack" "$TempDir" && UpAliPar "$TempDir/$AliPack.par"
 
     if [ $? != 0 ] ; then
       pecho "Installation of package $AliPack failed"
@@ -226,9 +316,7 @@ function ListAliPack() {
 
 Prog=$(basename "$0")
 
-Args=$(getopt -o 'lu' \
-  --long 'clean:,add:,abort,sync,list,update-list,cvmfs,help' \
-  -n"$Prog" -- "$@")
+Args=$(getopt -o '' --long 'clean:,add:,abort,sync,list,help' -n"$Prog" -- "$@")
 [ $? != 0 ] && exit 1
 
 eval set -- "$Args"
@@ -247,24 +335,19 @@ while [ "$1" != "--" ] ; do
       shift 2
     ;;
 
+    --no-token)
+      NoToken=1
+      shift 2
+    ;;
+
     --sync)
       CleanPackage='old'
       AddPackage='new'
       shift 1
     ;;
 
-    --list|-l)
+    --list)
       ListPackages=1
-      shift 1
-    ;;
-
-    --update-list|-u)
-      UpdateListDeps=1
-      shift 1
-    ;;
-
-    --dry-run)
-      DryRunPrefix="echo [Dry Run]"
       shift 1
     ;;
 
@@ -297,15 +380,12 @@ if [ "$AddPackage" == '' ] && [ "$CleanPackage" == '' ] &&
 fi
 
 #
-# Updates list of dependencies from remote
+# Create token, unless told to do otherwise
 #
 
-if [ "$UpdateListDeps" == 1 ] ; then
-  "$AF_PREFIX"/bin/af-create-deps.rb
-  if [ $? != 0 ] ; then
-    pecho 'Cannot create dependencies, aborting'
-    exit 1
-  fi
+if [ "$NoToken" != 1 ] ; then
+  ( source "$AF_PREFIX/etc/env-alice.sh" --alien && \
+    source "$AF_PREFIX/etc/af-alien-lib.sh" && AutoAuth )
 fi
 
 #
