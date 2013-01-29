@@ -65,6 +65,7 @@ FilesEtc=(
   'env-alice.sh'
   'af-alien-lib.sh'
   'conf/monalisa-conf.tmpl'
+  'AliRoot_PAR_SETUP.C'
 )
 
 # Files to copy in etc/xrootd

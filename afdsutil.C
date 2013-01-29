@@ -2347,6 +2347,18 @@ void afDataSetFromAliEn(TString basePath, TString fileName,
   TString postFindFilter, TString anchor, TString treeName,
   TString runList, TString dsPattern, TString options = "") {
 
+  if (gDebug >= 1) {
+    Printf("Search options:");
+    Printf(" * basePath       = %s", basePath.Data());
+    Printf(" * fileName       = %s", fileName.Data());
+    Printf(" * postFindFilter = %s", postFindFilter.Data());
+    Printf(" * anchor         = %s", anchor.Data());
+    Printf(" * treeName       = %s", treeName.Data());
+    Printf(" * runList        = %s", runList.Data());
+    Printf(" * dsPattern      = %s", dsPattern.Data());
+    Printf(" * options        = %s", options.Data());
+  }
+
   // Parse options
   Bool_t dryRun    = kTRUE;
   Bool_t setStaged = kFALSE;
@@ -2437,8 +2449,12 @@ void afDataSetFromAliEn(TString basePath, TString fileName,
   vector<Int_t> &runNums = *runNumsPtr;
   UInt_t nRuns = runNums.size();
 
+  // Global counters for report
+  Long64_t totNFiles    = 0;
+  Long64_t totSizeBytes = 0;
+
   // For each run (or only once if no runlist was given)
-  for (UInt_t i=0; (i < nRuns) || (nRuns == 0) ; i++) {
+  for (UInt_t i=0; (i < nRuns) || (nRuns == 0); i++) {
 
     TString dsName, basePathRun, postFindFilterRun;
 
@@ -2511,6 +2527,10 @@ void afDataSetFromAliEn(TString basePath, TString fileName,
       opStatus = "\033[34mdry run\033[m";
     }
 
+    // Update global counters
+    totSizeBytes += fc->GetTotalSize();
+    totNFiles += fc->GetNFiles();
+
     // Print: dataset name, num. files, total size, success|failure
     TString um;
     Double_t fmtSize;
@@ -2526,6 +2546,15 @@ void afDataSetFromAliEn(TString basePath, TString fileName,
 
     if (nRuns == 0) break;
 
+  }
+
+  // Print report
+  if (nRuns > 1) {
+    TString um;
+    Double_t fmtSize;
+    _afNiceSize(totSizeBytes, um, fmtSize);
+    Printf(">> Total: Size: %.1lf %s, Num. of files: %llu",
+      fmtSize, um.Data(), totNFiles);
   }
 
   Printf("\nPay attention: revise the settings you are using:\n");
@@ -2607,15 +2636,15 @@ void afDataSetQuick(Bool_t sim = kFALSE, TString period = "LHC10h",
   }
 
   // File name and tree name
-  TString fileName;
-  TString treeName;
+  TString fileName = "root_archive.zip";
+  TString treeName, anchor;
 
   if (esd) {
-    fileName = "AliESDs.root";
+    anchor = "AliESDs.root";
     treeName = "/esdTree";
   }
   else {
-    fileName = "AliAOD.root";
+    anchor = "AliAOD.root";
     treeName = "/aodTree";
   }
 
@@ -2661,8 +2690,9 @@ void afDataSetQuick(Bool_t sim = kFALSE, TString period = "LHC10h",
 
   }
 
-  // Invoke the complete function
-  afDataSetFromAliEn(basePath, fileName, filter, "", treeName, runRange,
+  // Invoke the generic function
+  options.Append(":noautoarch");
+  afDataSetFromAliEn(basePath, fileName, filter, anchor, treeName, runRange,
     dsPattern, options);
 
 }

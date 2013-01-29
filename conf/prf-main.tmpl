@@ -54,6 +54,8 @@ xpd.putrc Proof.GroupFile: $TPL_ETC/groups.alice.cf
 if $TPL_MASTER_SHORT*
 ## xpd.datasetsrc file url:$AF_DATASETS mss:root://pmaster.to.infn.it opt:-Av:As: rw=1
   xpd.datasetsrc file url:$AF_DATASETS mss:$AF_SHARED_DATA opt:-Av:As: rw=1
+##  xpd.datasetsrc alien cache:$AF_DATASETS_CACHE urltemplate:$AF_SHARED_DATA<path> cacheexpiresecs:3600
+##  xpd.datasetsrc alien cache:$AF_DATASETS_CACHE urltemplate:root://alice-srv-11.to.infn.it//storage<path> cacheexpiresecs:3600
 fi
 
 # Working directory (a temporary one)
@@ -61,6 +63,7 @@ xpd.workdir $TPL_VAR/proofbox
 
 # Environment for AAF compatibility
 xpd.putenv ALICE_PROOF_AAF_ALIEN_PACKAGES=$AF_PACK_DIR
+xpd.putenv AF_ALIROOT_PATTERN=$AF_ALIROOT_PATTERN
 xpd.putenv AF_DEP_FILE=$AF_DEP_FILE
 
 # To me it is unclear why these options go here - aren't they xrootd-specific?
@@ -111,7 +114,7 @@ xpd.putenv XrdSecSSLUSERKEY=<workdir>/<user>/.creds/x509_u<uid>
 xpd.putenv XrdSecSSLCADIR=$AF_ALIEN_DIR/globus/share/certificates
 
 # Important for AliEn, elsewhere TGrid::Connect() crashes
-xpd.putenv GCLIENT_SERVER_LIST=pcapiserv08.cern.ch:10000|
+xpd.putenv GCLIENT_SERVER_LIST=pcapiserv03.cern.ch:10000|
 
 # Directory of valid CAs (used for Globus extensions to SSL)
 xpd.putenv XrdSecGSICADIR=$AF_ALIEN_DIR/globus/share/certificates
@@ -157,6 +160,9 @@ xpd.rootd deny
 # Using xrootd on each server for data transfer (i.e., when merging files and
 # not streamed data)
 xpd.putenv LOCALDATASERVER=root://<user>@<host>:$TPL_XRDPORT/
+
+# Allowed users
+xpd.allowedusers dberzano
 
 ##
 ## Dataset manager configuration
