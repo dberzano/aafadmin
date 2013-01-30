@@ -16,7 +16,17 @@
  *
  */
 
+#if !defined(__CINT__) || defined (__MAKECINT__)
 #include <TError.h>
+#include <TSystem.h>
+#include <Riostream.h>
+#include <TROOT.h>
+#include <TList.h>
+#include <TProof.h>
+#include <TPRegexp.h>
+#include <TObjString.h>
+#include <TGrid.h>
+#endif
 
 TString gMessTag;
 
@@ -59,7 +69,7 @@ Bool_t SETUP_SetAliRootMode(TString &mode, const TString &extraLibs) {
 
   mode.ToLower();
   TString libs = extraLibs;
-  Int_t rv;
+  Long_t rv = -9999;
 
   // Load needed ROOT libraries
   if (!SETUP_LoadLibraries("VMC:Tree:Physics:Matrix:Minuit:XMLParser:Gui")) {
@@ -91,12 +101,12 @@ Bool_t SETUP_SetAliRootMode(TString &mode, const TString &extraLibs) {
   }
 
   // Check status code
-  if (rv != 0) {
+  if (rv == 0) {
+    ::Info(gMessTag.Data(), "Successfully loaded AliRoot base libraries");
+  }
+  else if (rv != -9999) {
     ::Error(gMessTag.Data(), "Loading of base AliRoot libraries failed");
     return kFALSE;
-  }
-  else {
-    ::Info(gMessTag.Data(), "Successfully loaded AliRoot base libraries");
   }
 
   // Load extra AliRoot libraries
@@ -131,8 +141,8 @@ Int_t SETUP(TList *inputList = NULL) {
       return -1;
     }
 
-    ::Info(gMessTag.Data(), "Enabling AliRoot located at %s %x",
-      aliRootDir.Data(), gSystem->Getenv("ALICE_ROOTs"));
+    ::Info(gMessTag.Data(), "Enabling AliRoot located at %s",
+      aliRootDir.Data());
 
   }
   else {
@@ -143,16 +153,22 @@ Int_t SETUP(TList *inputList = NULL) {
 
     gMessTag = gSystem->HostName();
 
-    // Prefix on CernVM-FS for AliRoot (hardcoded!) [TODO]
-    aliRootDir = \
-      "/cvmfs/alice.cern.ch/x86_64-2.6-gnu-4.1.2/Packages/AliRoot/<VERSION>";
+    // Template for AliRoot versions. The string <VERSION> will be substituted
+    // with the selected AliRoot version
+    aliRootDir = gSystem->Getenv("AF_ALIROOT_DIR_TEMPLATE");
+
+    if (aliRootDir.IsNull()) {
+      ::Error(gMessTag.Data(), "Variable AF_ALIROOT_DIR_TEMPLATE "
+        "must be in each worker's environment!");
+      return -1;
+    }
 
     // Extract AliRoot version from this package's name
     TString aliRootVer = gSystem->BaseName(gSystem->pwd());
     TPMERegexp re("^VO_ALICE@AliRoot::(.*)$");
     if (re.Match(aliRootVer) != 2) {
       ::Error(gMessTag.Data(),
-        "Error parsing requested AliRoot version from PARfile name (%s).",
+        "Error parsing requested AliRoot version from PARfile name (%s)",
         aliRootVer.Data());
       return -1;
     }
@@ -192,7 +208,7 @@ Int_t SETUP(TList *inputList = NULL) {
   if (inputList) {
     TIter it(inputList);
     TNamed *pair;
-    while (pair = dynamic_cast<TNamed *>(it.Next())) {
+    while ((pair = dynamic_cast<TNamed *>(it.Next()))) {
       if ( strcmp(pair->GetName(), "ALIROOT_EXTRA_INCLUDES") == 0 )
         extraIncs = pair->GetTitle();
       else if ( strcmp(pair->GetName(), "ALIROOT_EXTRA_LIBS") == 0 )
