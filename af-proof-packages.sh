@@ -227,7 +227,7 @@ function ListAliPack() {
 Prog=$(basename "$0")
 
 Args=$(getopt -o 'lu' \
-  --long 'clean:,add:,abort,sync,list,update-list,cvmfs,help' \
+  --long 'clean:,add:,abort,sync,list,update-list,dry-run,help' \
   -n"$Prog" -- "$@")
 [ $? != 0 ] && exit 1
 
