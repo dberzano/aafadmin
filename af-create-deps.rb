@@ -6,9 +6,9 @@
 # Creates the dependency file for AliRoot versions. The following environment
 # variables are needed:
 #
-# AF_DEP_URL  => HTTP URL containing the list of AliEn packages for ALICE
-# AF_DEP_FILE => destination file on the local filesystem
-# AF_PACK_DIR => local AliEn Packman repository
+# AF_DEP_URL      => HTTP URL containing the list of AliEn packages for ALICE
+# AF_DEP_FILE     => destination file on the local filesystem
+# AF_ALICE_SW_DIR => ALICE software packages directory
 #
 
 require 'net/http'
@@ -59,7 +59,7 @@ def get_ali_packages(url, pack_dir)
 
         # Check if package is installed for real
         if (pack_dir &&
-          !File.exists?("#{pack_dir}/#{vo_name}/AliRoot/#{ary[2]}/#{ary[2]}"))
+          !File.exists?("#{pack_dir}/AliRoot/#{ary[2]}"))
           next
         end
 
@@ -95,8 +95,8 @@ def main
     exit 3
   end
 
-  if ((pack_dir = ENV['AF_PACK_DIR']) == nil)
-    warn 'Environment variable AF_PACK_DIR should be set to a local directory'
+  if ((pack_dir = ENV['AF_ALICE_SW_DIR']) == nil)
+    warn 'Environment variable AF_ALICE_SW_DIR should be a local directory'
     exit 3
   end
 

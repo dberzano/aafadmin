@@ -35,7 +35,6 @@ FilesBin=(
   'af-xrddm-verify.sh'
   'af-proof-packages.sh'
   'af-monalisa.pl'
-  'af-packman-lite.sh'
   'af-sync'
 )
 
@@ -43,6 +42,7 @@ FilesBin=(
 FilesLibexec=(
   'af-create-deps.rb'
   'afdsutil.C'
+  'AliRoot_PAR_SETUP.C'
 )
 
 # Files to copy in etc/proof
@@ -65,7 +65,6 @@ FilesEtc=(
   'env-alice.sh'
   'af-alien-lib.sh'
   'conf/monalisa-conf.tmpl'
-  'AliRoot_PAR_SETUP.C'
 )
 
 # Files to copy in etc/xrootd
@@ -270,7 +269,7 @@ function Main {
     pecho 'Generating PROOF configuration...'
     (
       # Path prefix for ROOT packages
-      export TPL_ROOT_PREFIX=$AF_PACK_DIR/VO_ALICE/ROOT
+      export TPL_ROOT_PREFIX=$AF_ALICE_SW_DIR/ROOT
 
       # PROOF master, without domain
       export TPL_MASTER_SHORT=${AF_MASTER%%.*}

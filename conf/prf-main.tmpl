@@ -61,10 +61,8 @@ fi
 # Working directory (a temporary one)
 xpd.workdir $TPL_VAR/proofbox
 
-# Environment for AAF compatibility
-xpd.putenv ALICE_PROOF_AAF_ALIEN_PACKAGES=$AF_PACK_DIR
-xpd.putenv AF_ALIROOT_PATTERN=$AF_ALIROOT_PATTERN
-xpd.putenv AF_DEP_FILE=$AF_DEP_FILE
+# Environment of each worker/master
+xpd.putenv AF_ALIROOT_DIR_TEMPLATE=$AF_ALIROOT_DIR_TEMPLATE
 
 # To me it is unclear why these options go here - aren't they xrootd-specific?
 xpd.poolurl root://$AF_MASTER/
@@ -161,8 +159,8 @@ xpd.rootd deny
 # not streamed data)
 xpd.putenv LOCALDATASERVER=root://<user>@<host>:$TPL_XRDPORT/
 
-# Allowed users
-xpd.allowedusers dberzano
+### Allowed users
+##xpd.allowedusers dberzano
 
 ##
 ## Dataset manager configuration
@@ -217,5 +215,5 @@ xpd.rootsys $AF_ROOT_PROOF current
 #if ($RootVer == '')
   #continue
 #end if
-xpd.rootsys $TPL_ROOT_PREFIX/$RootVer/$RootVer VO_ALICE@ROOT::$RootVer
+xpd.rootsys $AF_ALICE_SW_DIR/ROOT/$RootVer VO_ALICE@ROOT::$RootVer
 #end for

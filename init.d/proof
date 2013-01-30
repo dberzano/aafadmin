@@ -22,11 +22,6 @@ export XRDAPI="$AF_ALIEN_DIR/api"
 # PROOF workdir
 export XPREF="$AF_PREFIX"/var/proof
 
-# General exports for AAF compatibility
-#export ALICE_PROOF_AAF_PROOF_DIR="$XPREF"
-#export ALICE_PROOF_AAF_XROOTD_REDIRECTOR="$(hostname -f)"
-#export ALICE_PROOF_AAF_ALIEN_PACKAGES="$AF_PACK_DIR"
-
 # Guess binary for xproofd
 export XPDBIN="$ROOTSYS"/bin/xproofd
 
@@ -60,7 +55,7 @@ export ProofUlimit='/etc/security/limits.d/proof.conf'
 
 # No binary, no party
 if [ ! -e "$XPDBIN" ]; then
-  echo "Can't guess xproofd path, aborting"
+  echo "Can't guess xproofd path (ROOT path: $ROOTSYS), aborting"
   exit 22
 fi
 

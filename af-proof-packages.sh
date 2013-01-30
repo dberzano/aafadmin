@@ -12,14 +12,6 @@ source /etc/aafrc || exit 1
 # Program name
 Prog=`basename "$0"`
 
-# AliRoot meta package (from AAF, by Martin Vala), in read-only
-AliMeta=`ls -rtd1 "$AF_PACK_DIR/VO_ALICE/aaf-aliroot/"*/`
-AliMeta="${AliMeta}/PROOF-INF/VO_ALICE@AliRoot"
-AliMeta=`readlink -e "$AliMeta"`
-
-# Disable ROOT history (this is a ROOT variable)
-export ROOT_HIST=0
-
 # Colored echo on stderr
 function pecho() {
   local NewLine=''
@@ -29,12 +21,6 @@ function pecho() {
   fi
   echo -e $NewLine "\033[1m$1\033[m" >&2
 }
-
-# Check if it exists or not
-if [ "$AliMeta" == '' ] ; then
-  pecho "$Prog: can't find AliRoot meta package"
-  exit 1
-fi
 
 # Prints help
 function PrintHelp {
@@ -50,6 +36,7 @@ function PrintHelp {
   pecho '      --clean PACKAGE              removes PACKAGE (or "old")'
   pecho '      --add PACKAGE                adds PACKAGE (or "new")'
   pecho '      --sync                       removes old and adds new packages'
+  pecho '      --af-sync                    sends packages to all PROOF slaves'
   pecho '      --list,-l                    list all local PROOF packages'
   pecho '      --abort                      abort on error'
   pecho '      --update-list,-u             updates packages list from remote'
@@ -72,7 +59,7 @@ function MakeAliPar() {
 
   # Creates package by copying template ROOT macro
   mkdir -p "$ParDir"/PROOF-INF
-  cp -v "$AF_PREFIX"/etc/AliRoot_PAR_SETUP.C "$ParDir"/PROOF-INF/SETUP.C
+  cp -v "$AF_PREFIX"/libexec/AliRoot_PAR_SETUP.C "$ParDir"/PROOF-INF/SETUP.C
 
   # Compress package (must be gzipped)
   tar -C "$DestDir" --force-local \
@@ -227,7 +214,7 @@ function ListAliPack() {
 Prog=$(basename "$0")
 
 Args=$(getopt -o 'lu' \
-  --long 'clean:,add:,abort,sync,list,update-list,dry-run,help' \
+  --long 'clean:,add:,abort,sync,list,update-list,dry-run,af-sync,help' \
   -n"$Prog" -- "$@")
 [ $? != 0 ] && exit 1
 
@@ -268,6 +255,11 @@ while [ "$1" != "--" ] ; do
       shift 1
     ;;
 
+    --af-sync)
+      AfSync=1
+      shift 1
+    ;;
+
     --help)
       PrintHelp
       exit 1
@@ -301,7 +293,7 @@ fi
 #
 
 if [ "$UpdateListDeps" == 1 ] ; then
-  "$AF_PREFIX"/bin/af-create-deps.rb
+  "$AF_PREFIX"/libexec/af-create-deps.rb
   if [ $? != 0 ] ; then
     pecho 'Cannot create dependencies, aborting'
     exit 1
@@ -332,3 +324,10 @@ fi
 if [ "$AddPackage" != '' ] ; then
   AddAliPack "$AddPackage" || exit $?
 fi
+
+#
+# Synchronize packages to all slaves
+#
+
+af-sync -p
+exit $?

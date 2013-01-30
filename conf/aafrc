@@ -1,10 +1,13 @@
 # Directory of AliEn
 #export AF_ALIEN_DIR='/opt/exp_software/alice/alien'
-export AF_ALIEN_DIR='/opt/alicesw/packages/alien'
+#export AF_ALIEN_DIR='/opt/alicesw/packages/alien'
+export AF_ALIEN_DIR='/cvmfs/alice.cern.ch/x86_64-2.6-gnu-4.1.2/Packages/AliEn/v2-19'
 
-# Directory of AliEn packages
-#export AF_PACK_DIR='/opt/exp_software/alice/packages'
-export AF_PACK_DIR='/opt/alicesw/packages'
+# Directory containing available ROOT and AliRoot versions
+export AF_ALICE_SW_DIR='/cvmfs/alice.cern.ch/x86_64-2.6-gnu-4.1.2/Packages'
+
+# Template for AliRoot versions directory
+export AF_ALIROOT_DIR_TEMPLATE="$AF_ALICE_SW_DIR/<VERSION>"
 
 # Extra software (no packages) prefix
 export AF_PREFIX='/opt/aaf'
@@ -23,18 +26,20 @@ export AF_GROUP=wheel
 # Fraction of cores to assign to workers for each host. It should be the
 # inverse of the number of users you expect to connect simultaneously, i.e.:
 # for 2 users, you'll have 0.5
-export AF_PROOF_WORKERS_PER_CORE=0.6
+export AF_PROOF_WORKERS_PER_CORE=1
 
 # ROOT directory of current PROOF version (must be full and explicit, and not
-# necessarily a ROOT coming from Packman
-#export AF_ROOT_PROOF="$AF_PACK_DIR/VO_ALICE/ROOT/v5-33-02b/v5-33-02b"
-export AF_ROOT_PROOF="$AF_PACK_DIR/VO_ALICE/ROOT/v5-34-02-1/v5-34-02-1"
+# necessarily a ROOT coming from Packman)
+export AF_ROOT_PROOF="/opt/alicesw/packages/VO_ALICE/ROOT/v5-34-04/v5-34-04"
 
 # Directory exported via internal PROOF's Xrootd
 export AF_PROOF_EXPORT="$AF_PREFIX/var/proof/export"
 
 # Datasets directory
 export AF_DATASETS="$AF_PREFIX/var/proof/datasets"
+
+# Cache for AliEn datasets
+export AF_DATASETS_CACHE="$AF_PREFIX/var/proof/datasets-cache"
 
 # Destination of the files to be deployed to each machine (with Puppet or
 # whatever you want). It is a rsync destination: it might or may not include
@@ -61,12 +66,14 @@ export AF_STATUS_MSG='Stable'
 #export AF_STATUS_MSG='Upgrading'
 
 # Variables for afdsmgrd
-export AF_AFDSMGRD_SLEEPSECS=20
+export AF_AFDSMGRD_SLEEPSECS=60
 export AF_AFDSMGRD_SCANDSEVERYLOOPS=15
-export AF_AFDSMGRD_PARALLELXFRS=20
-export AF_AFDSMGRD_CMDTIMEOUTSECS=600
+export AF_AFDSMGRD_PARALLELXFRS=15
+#export AF_AFDSMGRD_PARALLELXFRS=2
+export AF_AFDSMGRD_CMDTIMEOUTSECS=1800
+#export AF_AFDSMGRD_CMDTIMEOUTSECS=600
 export AF_AFDSMGRD_CORRUPTAFTERFAILS=4
 
 # PROOF memory limits (on RSS and virtual)
-export AF_PROOF_LIMIT_RSS_KB=100000 
-export AF_PROOF_LIMIT_VIRT_KB=100000
+export AF_PROOF_LIMIT_RSS_KB=2000000
+export AF_PROOF_LIMIT_VIRT_KB=2000000

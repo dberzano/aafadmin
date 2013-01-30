@@ -58,7 +58,6 @@ while [ "$1" != "--" ] ; do
 
     --root)
       RootVer="$2"
-      [ "$RootVer" == 'current' ] && RootVer=$(basename "$AF_ROOT_PROOF")
       shift 2
     ;;
 
@@ -88,12 +87,6 @@ while [ "$1" != "--" ] ; do
 done
 
 shift # --
-
-#while [ $# -gt 0 ] ; do
-#  echo "ExtraArgument: $1"
-#  shift 1
-#done
-#env|grep ^AF_
 
 #
 # List all the packages
@@ -176,7 +169,11 @@ fi
 # Enable ROOT
 #
 
-export ROOTSYS="$AF_PACK_DIR"/VO_ALICE/ROOT/$RootVer/$RootVer
+if [ "$RootVer" == 'current' ] ; then
+  export ROOTSYS="$AF_ROOT_PROOF"
+else
+  export ROOTSYS="$AF_ALICE_SW_DIR/ROOT/$RootVer"
+fi
 export PATH="$ROOTSYS/bin:$PATH"
 export LD_LIBRARY_PATH="$ROOTSYS/lib:$LD_LIBRARY_PATH"
 
@@ -192,14 +189,14 @@ Arch=$(root-config --arch)
 # Enable Geant3
 #
 
-export GEANT3DIR="$AF_PACK_DIR"/VO_ALICE/GEANT3/$Geant3Ver/$Geant3Ver
+export GEANT3DIR="$AF_ALICE_SW_DIR/GEANT3/$Geant3Ver"
 export LD_LIBRARY_PATH="$GEANT3DIR/lib/tgt_$Arch:$LD_LIBRARY_PATH"
 
 #
 # Enable AliRoot
 #
 
-export ALICE_ROOT="$AF_PACK_DIR"/VO_ALICE/AliRoot/$AliRootVer/$AliRootVer
+export ALICE_ROOT="$AF_ALICE_SW_DIR/AliRoot/$AliRootVer"
 export PATH="$ALICE_ROOT/bin/tgt_$Arch:$PATH"
 export LD_LIBRARY_PATH="$ALICE_ROOT/lib/tgt_$Arch:$LD_LIBRARY_PATH"
 
