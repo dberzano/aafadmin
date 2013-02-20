@@ -56,8 +56,8 @@ export AF_ALIEN_USER='proof'
 export AF_CUSTOM_AFDSMGRD='/home/sysman/devel/afdsmgrd/production'
 
 # MonALISA settings
-#export AF_MONA_HOST='193.206.184.58:8884'
-export AF_MONA_HOST='193.206.184.59:8884'
+export AF_MONA_HOST='193.206.184.58:8884'
+#export AF_MONA_HOST='193.206.184.59:8884'
 export AF_MONA_PREFIX='PROOF::TAF::STORAGE'
 
 # Arbitrary status message to show in MonALISA
