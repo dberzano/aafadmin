@@ -41,6 +41,7 @@ my $apNSessions    = -1;
 my $apProofUp      = -1;
 my $apSpaceTotalMb = -1;
 my $apSpaceFreeMb  = -1;
+my $xrootdVer      = "unknown";
 
 if ($masterHost eq $thisHost) {
 
@@ -67,6 +68,21 @@ if ($masterHost eq $thisHost) {
   $apSpaceTotalMb += 0;
   $apSpaceFreeMb += 0;
 
+  # xrootd version
+  open(FP, <<EOF
+source /etc/aafrc && \
+source \$AF_PREFIX/etc/env-alice.sh --alien && \
+echo exit | xrd 2>&1|
+EOF
+);
+  while (<FP>) {
+    if ($_ =~ /Xrootd version:\s+(.*)$/) {
+      $xrootdVer = "$1";  # forces string conv
+      last;
+    }
+  }
+  close(FP);
+
 }
 else {
 
@@ -75,7 +91,7 @@ else {
   #
 
   # Count activated slaves
-  open(FP, "ps aux | grep 'proofslave' | grep -v grep | wc -l |");
+  open(FP, "ps aux | grep 'proofslave' | grep -v grep | wc -l|");
   $apNSessions = <FP> + 0;
   close(FP);
 
@@ -91,6 +107,7 @@ print "Number of sessions: [$apNSessions]\n";
 print "Status:             [$apStatus]\n";
 print "PROOF up:           [$apProofUp]\n";
 print "ROOT version:       [$apRootVer]\n";
+print "xrootd version:     [$xrootdVer]\n";
 print "Total space [Mb]:   [$apSpaceTotalMb]\n";
 print "Free space [Mb]:    [$apSpaceFreeMb]\n";
 
@@ -102,6 +119,7 @@ $apm->sendParameters($apMonCluster, $thisHost, {
 });
 
 # On master only, send extra info
+# xrootd version variables: xrootd_version aaf_xrootd_ver[_latest]
 $apm->sendParameters($apMonClusterMaster, $thisHost, {
   "proofserv_count"   => $apNSessions,
   "xproofd_up"        => $apProofUp,
@@ -110,5 +128,6 @@ $apm->sendParameters($apMonClusterMaster, $thisHost, {
   "aaf_proof_workers" => $apNWorkers,
   "aaf_status"        => $apStatus,
   "space_free"        => $apSpaceFreeMb,
-  "space_total"       => $apSpaceTotalMb
+  "space_total"       => $apSpaceTotalMb,
+  "xrootd_version"    => $xrootdVer
 }) if ($masterHost eq $thisHost);
