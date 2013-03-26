@@ -32,5 +32,9 @@ all.pidpath $XRDPIDPATH
 # xrd protocol
 xrd.protocol xrootd * 
 
+# TODO SSS (shared secret) authentication
+#xrootd.seclib libXrdSec.so
+#sec.protocol sss -s /tmp/my_keyfile -c /tmp/my_keyfile
+
 # xrootd daemon -- no longer needed! It is builtin!
 #xrootd.fslib $(MyXrootdLibBase)/libXrdOfs.so
