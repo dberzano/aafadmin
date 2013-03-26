@@ -54,23 +54,26 @@ PosixPath=$(echo "/$PosixPath" | sed 's#//*#/#g')
 # Always (re)download by default
 Download=1
 
-if [ -e "$PosixPath" ] ; then
+#if [ -e "$PosixPath" ] ; then
+#
+#  # File already there, but it might be a partially downloaded zip that xrddm
+#  # has not had the chance to check yet! So, check for zip integrity here
+#  Ext=${PosixPath##*.}
+#  [ "$Ext" == "$PosixPath" ] && Ext=''
+#  Ext=$(echo "$Ext" | tr '[:upper:]' '[:lower:]')
+#
+#  if [ "$Ext" == 'zip' ]; then
+#    # Exit code for zip -T failure is 8
+#    zip -T "$PosixPath" && Download=0 || DeepRm "$PosixPath"
+#  else
+#    # File is not a zipfile: do not re-download it
+#    Download=0
+#  fi
+#
+#fi
 
-  # File already there, but it might be a partially downloaded zip that xrddm
-  # has not had the chance to check yet! So, check for zip integrity here
-  Ext=${PosixPath##*.}
-  [ "$Ext" == "$PosixPath" ] && Ext=''
-  Ext=$(echo "$Ext" | tr '[:upper:]' '[:lower:]')
-
-  if [ "$Ext" == 'zip' ]; then
-    # Exit code for zip -T failure is 8
-    zip -T "$PosixPath" && Download=0 || DeepRm "$PosixPath"
-  else
-    # File is not a zipfile: do not re-download it
-    Download=0
-  fi
-
-fi
+# Always force re-download
+[ -e "$PosixPath" ] && rm -f "$PosixPath"
 
 # Download file if told so
 if [ "$Download" == 1 ]; then
