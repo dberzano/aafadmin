@@ -329,5 +329,5 @@ fi
 # Synchronize packages to all slaves
 #
 
-af-sync -p
+"$AF_PREFIX"/bin/af-sync -p
 exit $?
