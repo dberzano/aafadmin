@@ -180,7 +180,8 @@ function RemoveHosts() {
 
 }
 
-# List hosts and workers
+# Check some ports of the current workers list to see if they are still up and
+# running properly: in case they're not, they get eliminated from the list
 function CleanupWorkers() {
   local P Host Ok ToRemove Tmp
 
@@ -192,11 +193,12 @@ function CleanupWorkers() {
     perl -ne '/[0-9]+\s+worker\s+([^\s]+)/ and print "$1\n"' > $Tmp
 
   while read Host ; do
-    Ok=0
+    Ok=1
     for P in ${CheckPorts[@]} ; do
+      #Msg "Currently trying host $Host on port $P"
       nc -z $Host $P &> /dev/null
-      if [ $? == 0 ] ; then
-        Ok=1
+      if [ $? != 0 ] ; then
+        Ok=0
         break
       fi
     done
