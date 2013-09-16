@@ -3,6 +3,7 @@
 
 ##xpd.datasetsrc file url:$AF_DATASETS mss:$AF_SHARED_DATA opt:Cq:Av:Ar: perms:open rw=1
 xpd.stagereqrepo $AF_DATASETS
+dsmgrd.purgenoopds true
 dsmgrd.urlregex alien://(.*)\$ $AF_SHARED_DATA\$1
 dsmgrd.sleepsecs $AF_AFDSMGRD_SLEEPSECS
 dsmgrd.scandseveryloops $AF_AFDSMGRD_SCANDSEVERYLOOPS

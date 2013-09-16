@@ -103,12 +103,13 @@ function xpdskel() {
   chmod 1777 "$XADM"
 
   # Datasets directory
-  mkdir -p "$AF_DATASETS" 2> /dev/null
+  mkdir -p "$AF_DATASETS" "$AF_DATASETS_CACHE" 2> /dev/null
   if [ $? != 0 ]; then
-    echo "Can't create datasets directory $AF_DATASETS"
+    echo "Can't create datasets directories: $AF_DATASETS $AF_DATASETS_CACHE"
     return 1
   fi
-  chown $AF_USER:$AF_GROUP "$AF_DATASETS"
+  chown $AF_USER:$AF_GROUP "$AF_DATASETS" "$AF_DATASETS_CACHE"
+  chmod 1777 "$AF_DATASETS" "$AF_DATASETS_CACHE"
 
   # The "proofbox" directory (under the working directory)
   local XWD="$XPREF/proofbox"

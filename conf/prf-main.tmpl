@@ -52,10 +52,10 @@ xpd.putrc Proof.GroupFile: $TPL_ETC/groups.alice.cf
 
 # The dataset manager runs on the PROOF master only
 if $TPL_MASTER_SHORT*
-## xpd.datasetsrc file url:$AF_DATASETS mss:root://pmaster.to.infn.it opt:-Av:As: rw=1
-  xpd.datasetsrc file url:$AF_DATASETS mss:$AF_SHARED_DATA opt:-Av:As: rw=1
-##  xpd.datasetsrc alien cache:$AF_DATASETS_CACHE urltemplate:$AF_SHARED_DATA<path> cacheexpiresecs:3600
-##  xpd.datasetsrc alien cache:$AF_DATASETS_CACHE urltemplate:root://alice-srv-11.to.infn.it//storage<path> cacheexpiresecs:3600
+##  xpd.datasetsrc file url:$AF_DATASETS mss:$AF_SHARED_DATA opt:-Av:As: rw=1
+  xpd.stagereqrepo $AF_DATASETS
+  # One week of cache
+  xpd.datasetsrc alien cache:$AF_DATASETS_CACHE urltemplate:$AF_SHARED_DATA<path> cacheexpiresecs:604800
 fi
 
 # Working directory (a temporary one)
